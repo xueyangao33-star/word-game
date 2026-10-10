@@ -120,6 +120,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .sp-reset{background:#FEF3C7;color:#92400E}
 .sp-check{background:var(--pri);color:#fff;padding:10px 28px!important;font-size:15px!important;border-radius:var(--r)!important}
 .sp-check:disabled{background:#CBD5E1;cursor:default}
+.repeat-box{background:var(--card);border-radius:var(--r);padding:18px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.repeat-word{font-size:30px;font-weight:800;margin:8px 0 4px}
+.repeat-meaning{font-size:18px;color:var(--txt2);margin-bottom:10px}
+.repeat-listen{width:78px;height:78px;border:none;border-radius:50%;background:var(--pri);color:#fff;font-size:34px;margin:8px auto;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 18px rgba(99,102,241,.28)}
+.repeat-listen.on{animation:pulse .7s ease-in-out infinite;background:#EF4444}
+.repeat-result{margin:12px 0;padding:12px;border-radius:12px;background:#F8FAFC;color:var(--txt2);font-size:14px;line-height:1.7}
+.repeat-result strong{color:var(--txt)}
+.repeat-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.repeat-actions button{border:none;border-radius:18px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer}
+.repeat-good{background:#D1FAE5;color:#047857}.repeat-again{background:#FEF3C7;color:#B45309}.repeat-hard{background:#FEE2E2;color:#B91C1C}
 
 /* Install Banner */
 .install-banner{display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border-radius:16px;padding:16px 20px;box-shadow:0 8px 32px rgba(99,102,241,.4);z-index:150;align-items:center;gap:12px}
@@ -213,7 +223,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div class="ph"><button class="bb" onclick="showPg('xesc-lesson')" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2>学而思课程 · 选模式</h2></div>
   <div class="mc" onclick="startQuiz('xesc','read')"><div class="em">📖</div><h3>认读模式</h3><p>看英文，选中文</p></div>
   <div class="mc" onclick="startQuiz('xesc','spell')"><div class="em">✏️</div><h3>拼写模式</h3><p>看中文，拼英文</p></div>
-  <div class="mc" onclick="startQuiz('xesc','listen')"><div class="em">🎧</div><h3>跟读模式</h3><p>听发音，选单词</p></div>
+  <div class="mc" onclick="startQuiz('xesc','listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选单词</p></div>
+  <div class="mc" onclick="startQuiz('xesc','repeat')"><div class="em">🎙️</div><h3>跟读反馈</h3><p>读完给简单反馈</p></div>
   <div class="mc" onclick="startQuiz('xesc','review')"><div class="em">🔄</div><h3>错题回顾</h3><p>复习课程顺序错题</p></div>
 </div>
 
@@ -544,7 +555,7 @@ function startQuiz(bk,m){
   }
   if(!qWords.length){toast('没有单词');return;}
   qi=0;qOk=0;qNo=0;
-  const mn={read:'认读模式',spell:'拼写模式',listen:'跟读模式',review:'错题回顾'};
+  const mn={read:'认读模式',spell:'拼写模式',listen:'听音选择',repeat:'跟读反馈',review:'错题回顾'};
   document.getElementById('quiz-title').textContent=(bank==='xes'?'学而思分类':bank==='xesc'?'学而思课程':'剑桥 '+LV_NAMES[camLv])+' · '+mn[mode];
   showPg('quiz');renderQ();
 }
@@ -558,10 +569,12 @@ function renderQ(){
   if(mode==='pattern')renderPattern(w,body);
   else if(mode==='read')renderRead(w,body);
   else if(mode==='spell')renderSpell(w,body);
+  else if(mode==='repeat')renderRepeat(w,body);
   else renderListen(w,body);
 }
 
 function esc(s){return s.replace(/'/g,"\\'").replace(/"/g,'&quot;');}
+function html(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
 function getPool(){
   if(bank==='xes') return selCats.length?XES.filter(w=>selCats.includes(w.g)):XES;
@@ -781,6 +794,91 @@ function skipL(correct){
   document.querySelectorAll('.ob').forEach(b=>{b.style.pointerEvents='none';if(b.textContent===correct)b.classList.add('ok');});
   doNo();toast('已标记为不会');
   setTimeout(()=>{qi++;renderQ();},1200);
+}
+
+let repeatRec=null;
+function normSpeech(s){
+  return String(s||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9\s-]/g,' ').replace(/\s+/g,' ').trim();
+}
+function editDist(a,b){
+  const dp=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));
+  for(let i=0;i<=a.length;i++)dp[i][0]=i;
+  for(let j=0;j<=b.length;j++)dp[0][j]=j;
+  for(let i=1;i<=a.length;i++){
+    for(let j=1;j<=b.length;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[a.length][b.length];
+}
+function speechScore(target,heard){
+  target=normSpeech(target);heard=normSpeech(heard);
+  if(!heard)return 0;
+  if(heard===target)return 1;
+  const homophones={
+    write:['right'],right:['write'],two:['to','too'],to:['two','too'],too:['two','to'],
+    see:['sea'],sea:['see'],hear:['here'],here:['hear'],there:['their','they re'],their:['there','they re'],
+    four:['for'],for:['four'],one:['won'],won:['one'],eight:['ate'],ate:['eight'],by:['buy','bye'],buy:['by','bye'],bye:['by','buy']
+  };
+  if(homophones[target]&&homophones[target].includes(heard))return .9;
+  if(heard.split(' ').includes(target))return .92;
+  const max=Math.max(target.length,heard.length,1);
+  return Math.max(0,1-editDist(target,heard)/max);
+}
+function renderRepeat(w,body){
+  if(repeatRec){try{repeatRec.abort();}catch(e){}repeatRec=null;}
+  const ww=esc(w.w);
+  body.innerHTML='<div class="repeat-box"><button class="spk" onclick="speak(\''+ww+'\')" title="听标准发音">🔊</button><div class="repeat-word">'+html(w.w)+'</div><div class="phn">'+html(w.p)+'</div><div class="repeat-meaning">'+html(w.c)+'</div><button class="repeat-listen" id="repeat-btn" onclick="startRepeat()" title="开始跟读">🎙️</button><div class="repeat-result" id="repeat-result">先听标准发音，再点麦克风跟读。</div><div class="repeat-actions" id="repeat-actions" style="display:none"><button class="repeat-good" onclick="repeatNext(true)">读得不错，下一题</button><button class="repeat-again" onclick="repeatAgain()">再读一次</button><button class="repeat-hard" onclick="repeatNext(false)">还不熟，下一题</button></div></div>';
+  setTimeout(()=>speak(w.w),300);
+}
+function startRepeat(){
+  const w=qWords[qi],Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const res=document.getElementById('repeat-result'),btn=document.getElementById('repeat-btn');
+  document.getElementById('repeat-actions').style.display='none';
+  if(!Rec){
+    res.innerHTML='这个浏览器暂时不支持自动识别。可以让孩子读一遍后，由家长直接选择下面的结果。';
+    document.getElementById('repeat-actions').style.display='flex';
+    return;
+  }
+  try{
+    if(repeatRec){try{repeatRec.abort();}catch(e){}}
+    repeatRec=new Rec();repeatRec.lang='en-US';repeatRec.interimResults=false;repeatRec.maxAlternatives=3;
+    btn.classList.add('on');res.innerHTML='正在听...读完后稍等一下';
+    repeatRec.onresult=function(e){
+      const list=e.results&&e.results[0]?Array.from(e.results[0]):[];
+      const heard=(list.sort((a,b)=>(b.confidence||0)-(a.confidence||0))[0]||{}).transcript||'';
+      handleRepeatResult(w.w,heard);
+    };
+    repeatRec.onerror=function(){
+      res.innerHTML='没有听清，或者麦克风权限没有打开。可以再试一次，也可以由家长判断后进入下一题。';
+      document.getElementById('repeat-actions').style.display='flex';
+    };
+    repeatRec.onend=function(){btn.classList.remove('on');};
+    repeatRec.start();
+  }catch(e){
+    res.innerHTML='麦克风启动失败。请检查浏览器权限，或先用手动反馈继续练习。';
+    document.getElementById('repeat-actions').style.display='flex';
+  }
+}
+function handleRepeatResult(target,heard){
+  const score=speechScore(target,heard),res=document.getElementById('repeat-result');
+  let fb='没太听清，再试一次';
+  if(score>=.82)fb='读得很接近';
+  else if(score>=.55)fb='有点像，再读一次会更稳';
+  res.innerHTML='<strong>'+fb+'</strong><br>听起来像：'+html(heard||'没有识别到')+'<br>目标单词：'+html(target);
+  document.getElementById('repeat-actions').style.display='flex';
+}
+function repeatAgain(){
+  const w=qWords[qi];
+  document.getElementById('repeat-actions').style.display='none';
+  document.getElementById('repeat-result').innerHTML='再听一遍，然后点麦克风跟读。';
+  speak(w.w);
+}
+function repeatNext(ok){
+  if(repeatRec){try{repeatRec.abort();}catch(e){}repeatRec=null;}
+  if(ok)doOk();else doNo();
+  qi++;renderQ();
 }
 
 // === OK/NO ===
