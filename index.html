@@ -616,40 +616,37 @@ function skipR(correct){
 
 function chunkWord(word){
   var w=word.toLowerCase().trim();
-  if(w.length<=4)return [w];
-  var VOWELS='aeiouy';
-  var isV=function(c){return VOWELS.indexOf(c)>=0};
-  var ONSET=['bl','br','cl','cr','dr','fl','fr','gl','gr','pl','pr','sc','sk','sl','sm','sn','sp','st','sw','tr','tw','wr','ch','sh','th','ph','wh','qu','kn','gn','scr','spr','str','thr','spl'];
-  var vg=[],i=0;
-  while(i<w.length){if(isV(w[i])){var s=i;while(i<w.length&&isV(w[i]))i++;vg.push([s,i]);}else i++;}
-  if(vg.length<=1)return [w];
-  var gaps=[];
-  for(var g=0;g<vg.length-1;g++){
-    var gapStr=w.substring(vg[g][1],vg[g+1][0]),len=gapStr.length,left='',right='';
-    if(len===0){}else if(len===1){right=gapStr;}
-    else if(len===2){if(ONSET.indexOf(gapStr)>=0)right=gapStr;else{left=gapStr[0];right=gapStr[1];}}
-    else{var splitPt=1;for(var tryLen=3;tryLen>=2;tryLen--){var tail=gapStr.substring(gapStr.length-tryLen);if(ONSET.indexOf(tail)>=0){splitPt=gapStr.length-tryLen;break;}}
-    if(splitPt===1){var last2=gapStr.substring(gapStr.length-2);if(ONSET.indexOf(last2)>=0)splitPt=gapStr.length-2;}
-    left=gapStr.substring(0,Math.max(splitPt,1));right=gapStr.substring(Math.max(splitPt,1));}
-    gaps.push({left:left,right:right});
+  if(w.length<=2)return [w];
+  var vowelUnits=['eigh','ough','augh','air','ear','eer','are','ere','ire','ure','igh','ai','ay','ea','ee','ie','oa','oe','oo','ou','ow','oy','oi','au','aw','ew','ue','ui','er','ir','ur','ar','or','all','al'];
+  var consonantUnits=['tch','dge','scr','spr','str','spl','squ','thr','shr','sch','bl','br','cl','cr','dr','fl','fr','gl','gr','pl','pr','sc','sk','sl','sm','sn','sp','st','sw','tr','tw','ch','sh','th','ph','wh','gh','ck','ng','nk','qu','wr','kn','gn','mb'];
+  var phonics=function(part){
+    if(part.length<=2)return [part];
+    var out=[],i=0;
+    while(i<part.length){
+      var rest=part.substring(i),hit='';
+      var lists=[vowelUnits,consonantUnits];
+      for(var li=0;li<lists.length&&!hit;li++){
+        for(var j=0;j<lists[li].length;j++){
+          var u=lists[li][j];
+          if(rest.indexOf(u)===0){hit=u;break;}
+        }
+      }
+      if(!hit&&i+1<part.length&&part[i]===part[i+1]&&/[bcdfghjklmnpqrstvwxyz]/.test(part[i]))hit=part.substring(i,i+2);
+      if(!hit)hit=part[i];
+      out.push(hit);i+=hit.length;
+    }
+    if(out.length>1&&out[out.length-1]==='e'&&/[bcdfghjklmnpqrstvwxyz]+$/.test(out[out.length-2])){
+      out[out.length-2]+=out.pop();
+    }
+    return out;
+  };
+  var chunks=[],parts=w.match(/[a-z]+|[^a-z]+/g)||[w];
+  for(var p=0;p<parts.length;p++){
+    if(/^[a-z]+$/.test(parts[p]))chunks=chunks.concat(phonics(parts[p]));
+    else chunks.push(parts[p]);
   }
-  var chunks=[];
-  for(var g=0;g<vg.length;g++){
-    var chunk='';
-    if(g===0)chunk+=w.substring(0,vg[0][0]);
-    if(g>0)chunk+=gaps[g-1].right;
-    chunk+=w.substring(vg[g][0],vg[g][1]);
-    if(g<gaps.length)chunk+=gaps[g].left;
-    if(g===vg.length-1)chunk+=w.substring(vg[g][1]);
-    chunks.push(chunk);
-  }
-  if(chunks.length>1){
-    var merged=[chunks[0]];
-    for(var i=1;i<chunks.length;i++){if(chunks[i].length<2)merged[merged.length-1]+=chunks[i];else merged.push(chunks[i]);}
-    if(merged.length>1&&merged[merged.length-1].length<2)merged[merged.length-2]+=merged.pop();
-    return merged;
-  }
-  return chunks;
+  if(chunks.length>1&&chunks[chunks.length-1].length===1&&/[^a-z]/.test(chunks[chunks.length-1]))chunks[chunks.length-2]+=chunks.pop();
+  return chunks.length?chunks:[w];
 }
 
 function renderSpell(w,body){
@@ -716,8 +713,10 @@ function spHint(){
   var targetChunks=window._sTarget.split(' ');
   for(var i=0;i<window._sSlots.length;i++){
     if(!window._sSlots[i].fixed&&!window._sSlots[i].ch){
-      window._sSlots[i].ch=targetChunks[i];
-      var ti=window._sTiles.findIndex(function(t){return t.ch===targetChunks[i]&&!t.used});
+      var targetIndex=0;
+      for(var j=0;j<i;j++)if(!window._sSlots[j].fixed)targetIndex++;
+      window._sSlots[i].ch=targetChunks[targetIndex];
+      var ti=window._sTiles.findIndex(function(t){return t.ch===targetChunks[targetIndex]&&!t.used});
       if(ti>=0)window._sTiles[ti].used=true;
       window._sHu=true;
       var nx=i+1;while(nx<window._sSlots.length&&window._sSlots[nx].fixed)nx++;
