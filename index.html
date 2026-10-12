@@ -123,13 +123,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .repeat-box{background:var(--card);border-radius:var(--r);padding:18px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.07)}
 .repeat-word{font-size:30px;font-weight:800;margin:8px 0 4px}
 .repeat-meaning{font-size:18px;color:var(--txt2);margin-bottom:10px}
-.repeat-listen{width:78px;height:78px;border:none;border-radius:50%;background:var(--pri);color:#fff;font-size:34px;margin:8px auto;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 18px rgba(99,102,241,.28)}
+.next-row{text-align:center;margin-top:14px}.next-row button{display:inline-block;width:auto;padding:11px 34px;font-size:15px;border-radius:24px}
+.repeat-tip{font-size:13px;color:var(--txt2);margin:8px 0 6px}
+.repeat-listen{min-width:210px;min-height:64px;border:none;border-radius:22px;background:var(--pri);color:#fff;font-size:16px;font-weight:800;margin:10px auto;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 8px 18px rgba(99,102,241,.28);padding:12px 22px}
+.repeat-listen .mic{font-size:28px;line-height:1}
 .repeat-listen.on{animation:pulse .7s ease-in-out infinite;background:#EF4444}
 .repeat-result{margin:12px 0;padding:12px;border-radius:12px;background:#F8FAFC;color:var(--txt2);font-size:14px;line-height:1.7}
 .repeat-result strong{color:var(--txt)}
 .repeat-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .repeat-actions button{border:none;border-radius:18px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer}
 .repeat-good{background:#D1FAE5;color:#047857}.repeat-again{background:#FEF3C7;color:#B45309}.repeat-hard{background:#FEE2E2;color:#B91C1C}
+.storage-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.storage-actions button{flex:1;border:none;border-radius:14px;background:#EEF2FF;color:var(--pri);padding:9px 10px;font-size:12px;font-weight:700;cursor:pointer}
 
 /* Install Banner */
 .install-banner{display:none;position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border-radius:16px;padding:16px 20px;box-shadow:0 8px 32px rgba(99,102,241,.4);z-index:150;align-items:center;gap:12px}
@@ -306,6 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     </div>
   </div>
   <div class="sc2"><h4>❌ 错题本</h4><div id="s-wl" style="font-size:12px;color:var(--txt2)"></div></div>
+  <div class="sc2"><h4>💾 进度备份</h4><div style="font-size:12px;color:var(--txt2);line-height:1.6">进度会自动保存到浏览器本地和 IndexedDB。长期保险建议偶尔导出一次备份文件。</div><div class="storage-actions"><button onclick="exportProgress()">导出进度</button><button onclick="document.getElementById('progress-file').click()">导入进度</button></div><input id="progress-file" type="file" accept="application/json" style="display:none" onchange="importProgress(this)"></div>
   <button class="btn" style="background:var(--no);margin-top:6px" onclick="resetAll()">重置所有进度</button>
 </div>
 
@@ -337,9 +342,51 @@ const LV_NAMES={L1:'L1 初阶',L2:'L2 进阶',L3:'L3 高阶'};
 
 // === STATE ===
 const SK='vocab_unified_v2';
-let S=JSON.parse(localStorage.getItem(SK)||'{}');
-if(!S.stars) S={stars:0,level:1,streak:0,maxStreak:0,tOk:0,tNo:0,wrong:{},mastered:{},daily:{}};
-function save(){localStorage.setItem(SK,JSON.stringify(S));}
+const DEFAULT_STATE={stars:0,level:1,streak:0,maxStreak:0,tOk:0,tNo:0,wrong:{},mastered:{},daily:{}};
+function normalizeState(s){
+  s=s&&typeof s==='object'?s:{};
+  const out=Object.assign({},DEFAULT_STATE,s);
+  out.wrong=out.wrong&&typeof out.wrong==='object'?out.wrong:{};
+  out.mastered=out.mastered&&typeof out.mastered==='object'?out.mastered:{};
+  out.daily=out.daily&&typeof out.daily==='object'?out.daily:{};
+  ['stars','level','streak','maxStreak','tOk','tNo'].forEach(k=>{out[k]=Number(out[k])||DEFAULT_STATE[k];});
+  return out;
+}
+function readLocalState(){try{return normalizeState(JSON.parse(localStorage.getItem(SK)||'{}'));}catch(e){return normalizeState({});}}
+let S=readLocalState();
+let _db=null;
+function openProgressDB(){
+  if(!('indexedDB' in window))return Promise.resolve(null);
+  if(_db)return Promise.resolve(_db);
+  return new Promise(resolve=>{
+    const req=indexedDB.open('vocab-progress-db',1);
+    req.onupgradeneeded=e=>e.target.result.createObjectStore('kv');
+    req.onsuccess=e=>{_db=e.target.result;resolve(_db);};
+    req.onerror=()=>resolve(null);
+  });
+}
+async function saveDB(){
+  const db=await openProgressDB();if(!db)return;
+  try{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put({state:S,updatedAt:Date.now()},SK);}catch(e){}
+}
+async function loadDB(){
+  const db=await openProgressDB();if(!db)return null;
+  return new Promise(resolve=>{
+    try{
+      const tx=db.transaction('kv','readonly'),req=tx.objectStore('kv').get(SK);
+      req.onsuccess=()=>resolve(req.result&&req.result.state?normalizeState(req.result.state):null);
+      req.onerror=()=>resolve(null);
+    }catch(e){resolve(null);}
+  });
+}
+function save(){localStorage.setItem(SK,JSON.stringify(S));saveDB();}
+loadDB().then(dbState=>{
+  if(dbState){
+    const localScore=Object.keys(S.mastered).length+Object.keys(S.wrong).length+S.tOk+S.tNo;
+    const dbScore=Object.keys(dbState.mastered).length+Object.keys(dbState.wrong).length+dbState.tOk+dbState.tNo;
+    if(dbScore>localScore){S=dbState;localStorage.setItem(SK,JSON.stringify(S));updateHome();updHdr();}
+  }else saveDB();
+});
 
 let bank='',camLv='',mode='',selCats=[],selLessons=[],selPatternLessons=[],selDays=[],qWords=[],qi=0,qOk=0,qNo=0;
 
@@ -575,6 +622,11 @@ function renderQ(){
 
 function esc(s){return s.replace(/'/g,"\\'").replace(/"/g,'&quot;');}
 function html(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function showNext(label){
+  const body=document.getElementById('quiz-body');
+  if(!document.getElementById('next-row'))body.insertAdjacentHTML('beforeend','<div class="next-row" id="next-row"><button class="btn" onclick="nextQ()">'+(label||'下一题 →')+'</button></div>');
+}
+function nextQ(){qi++;renderQ();}
 
 function getPool(){
   if(bank==='xes') return selCats.length?XES.filter(w=>selCats.includes(w.g)):XES;
@@ -602,12 +654,12 @@ function checkP(el,pick,correct){
   if(el.classList.contains('ok')||el.classList.contains('no'))return;
   document.querySelectorAll('.ob').forEach(b=>b.style.pointerEvents='none');
   if(pick===correct){el.classList.add('ok');doOk();}else{el.classList.add('no');document.querySelectorAll('.ob').forEach(b=>{if(b.textContent===correct)b.classList.add('ok');});doNo();}
-  setTimeout(()=>{qi++;renderQ();},1000);
+  showNext();
 }
 function skipP(correct){
   document.querySelectorAll('.ob').forEach(b=>{b.style.pointerEvents='none';if(b.textContent===correct)b.classList.add('ok');});
   doNo();toast('已标记为不会');
-  setTimeout(()=>{qi++;renderQ();},1200);
+  showNext();
 }
 
 function renderRead(w,body){
@@ -619,12 +671,12 @@ function checkR(el,pick,correct){
   if(el.classList.contains('ok')||el.classList.contains('no'))return;
   document.querySelectorAll('.ob').forEach(b=>b.style.pointerEvents='none');
   if(pick===correct){el.classList.add('ok');doOk();}else{el.classList.add('no');document.querySelectorAll('.ob').forEach(b=>{if(b.textContent===correct)b.classList.add('ok');});doNo();}
-  setTimeout(()=>{qi++;renderQ();},1000);
+  showNext();
 }
 function skipR(correct){
   document.querySelectorAll('.ob').forEach(b=>{b.style.pointerEvents='none';if(b.textContent===correct)b.classList.add('ok');});
   doNo();toast('已标记为不会');
-  setTimeout(()=>{qi++;renderQ();},1200);
+  showNext();
 }
 
 function chunkWord(word){
@@ -762,7 +814,7 @@ function checkS(){
     doNo();
   }
   document.getElementById('sp-chk').disabled=true;
-  setTimeout(function(){qi++;renderQ()},1500);
+  showNext();
 }
 function spSkip(){
   var w=qWords[qi],ans=document.getElementById('sans');
@@ -776,7 +828,7 @@ function spSkip(){
   ans.innerHTML='正确拼写：<strong>'+w.w+'</strong>';
   doNo();
   document.getElementById('sp-chk').disabled=true;
-  setTimeout(function(){qi++;renderQ()},2000);
+  showNext();
 }
 
 function renderListen(w,body){
@@ -788,12 +840,12 @@ function checkL(el,pick,correct){
   if(el.classList.contains('ok')||el.classList.contains('no'))return;
   document.querySelectorAll('.ob').forEach(b=>b.style.pointerEvents='none');
   if(pick===correct){el.classList.add('ok');doOk();}else{el.classList.add('no');document.querySelectorAll('.ob').forEach(b=>{if(b.textContent===correct)b.classList.add('ok');});doNo();}
-  setTimeout(()=>{qi++;renderQ();},1000);
+  showNext();
 }
 function skipL(correct){
   document.querySelectorAll('.ob').forEach(b=>{b.style.pointerEvents='none';if(b.textContent===correct)b.classList.add('ok');});
   doNo();toast('已标记为不会');
-  setTimeout(()=>{qi++;renderQ();},1200);
+  showNext();
 }
 
 let repeatRec=null;
@@ -829,13 +881,16 @@ function speechScore(target,heard){
 function renderRepeat(w,body){
   if(repeatRec){try{repeatRec.abort();}catch(e){}repeatRec=null;}
   const ww=esc(w.w);
-  body.innerHTML='<div class="repeat-box"><button class="spk" onclick="speak(\''+ww+'\')" title="听标准发音">🔊</button><div class="repeat-word">'+html(w.w)+'</div><div class="phn">'+html(w.p)+'</div><div class="repeat-meaning">'+html(w.c)+'</div><button class="repeat-listen" id="repeat-btn" onclick="startRepeat()" title="开始跟读">🎙️</button><div class="repeat-result" id="repeat-result">先听标准发音，再点麦克风跟读。</div><div class="repeat-actions" id="repeat-actions" style="display:none"><button class="repeat-good" onclick="repeatNext(true)">读得不错，下一题</button><button class="repeat-again" onclick="repeatAgain()">再读一次</button><button class="repeat-hard" onclick="repeatNext(false)">还不熟，下一题</button></div></div>';
+  body.innerHTML='<div class="repeat-box"><button class="spk" onclick="speak(\''+ww+'\')" title="听标准发音">🔊</button><div class="repeat-word">'+html(w.w)+'</div><div class="phn">'+html(w.p)+'</div><div class="repeat-meaning">'+html(w.c)+'</div><div class="repeat-tip">听完标准发音后，点击下面的大按钮开始跟读。</div><button class="repeat-listen" id="repeat-btn" onclick="startRepeat()" title="开始跟读"><span class="mic">🎙️</span><span id="repeat-btn-text">点这里开始跟读</span></button><div class="repeat-result" id="repeat-result">还没有开始收音。</div><div class="repeat-actions" id="repeat-actions" style="display:none"><button class="repeat-good" onclick="repeatNext(true)">读得不错，下一题</button><button class="repeat-again" onclick="repeatAgain()">再读一次</button><button class="repeat-hard" onclick="repeatNext(false)">还不熟，下一题</button></div></div>';
   setTimeout(()=>speak(w.w),300);
 }
 function startRepeat(){
   const w=qWords[qi],Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
   const res=document.getElementById('repeat-result'),btn=document.getElementById('repeat-btn');
+  const btnText=document.getElementById('repeat-btn-text');
   document.getElementById('repeat-actions').style.display='none';
+  if(_ca){_ca.pause();_ca=null;}
+  if('speechSynthesis' in window)speechSynthesis.cancel();
   if(!Rec){
     res.innerHTML='这个浏览器暂时不支持自动识别。可以让孩子读一遍后，由家长直接选择下面的结果。';
     document.getElementById('repeat-actions').style.display='flex';
@@ -844,17 +899,19 @@ function startRepeat(){
   try{
     if(repeatRec){try{repeatRec.abort();}catch(e){}}
     repeatRec=new Rec();repeatRec.lang='en-US';repeatRec.interimResults=false;repeatRec.maxAlternatives=3;
-    btn.classList.add('on');res.innerHTML='正在听...读完后稍等一下';
+    btn.classList.add('on');btn.disabled=true;if(btnText)btnText.textContent='正在收音，请现在读';
+    res.innerHTML='<strong>正在收音...</strong><br>请对着手机或电脑麦克风清楚读出这个单词。';
     repeatRec.onresult=function(e){
       const list=e.results&&e.results[0]?Array.from(e.results[0]):[];
       const heard=(list.sort((a,b)=>(b.confidence||0)-(a.confidence||0))[0]||{}).transcript||'';
       handleRepeatResult(w.w,heard);
     };
-    repeatRec.onerror=function(){
-      res.innerHTML='没有听清，或者麦克风权限没有打开。可以再试一次，也可以由家长判断后进入下一题。';
+    repeatRec.onerror=function(e){
+      const msg=e&&e.error==='not-allowed'?'麦克风权限没有打开，请允许浏览器使用麦克风后再试。':'没有听清。点“再读一次”后，看到红色按钮提示“正在收音”时再读。';
+      res.innerHTML=msg;
       document.getElementById('repeat-actions').style.display='flex';
     };
-    repeatRec.onend=function(){btn.classList.remove('on');};
+    repeatRec.onend=function(){btn.classList.remove('on');btn.disabled=false;if(btnText)btnText.textContent='点这里开始跟读';};
     repeatRec.start();
   }catch(e){
     res.innerHTML='麦克风启动失败。请检查浏览器权限，或先用手动反馈继续练习。';
@@ -872,7 +929,7 @@ function handleRepeatResult(target,heard){
 function repeatAgain(){
   const w=qWords[qi];
   document.getElementById('repeat-actions').style.display='none';
-  document.getElementById('repeat-result').innerHTML='再听一遍，然后点麦克风跟读。';
+  document.getElementById('repeat-result').innerHTML='再听一遍，然后点击“点这里开始跟读”。';
   speak(w.w);
 }
 function repeatNext(ok){
@@ -947,7 +1004,27 @@ function renderStats(){
   }
   document.getElementById('s-wl').innerHTML=wh;
 }
-function resetAll(){if(!confirm('确定重置所有进度？不可撤销！'))return;localStorage.removeItem(SK);S={stars:0,level:1,streak:0,maxStreak:0,tOk:0,tNo:0,wrong:{},mastered:{},daily:{}};save();updateHome();renderStats();toast('已重置');}
+function exportProgress(){
+  const data=JSON.stringify({version:1,exportedAt:new Date().toISOString(),state:S},null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='单词闯关进度备份-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importProgress(input){
+  const file=input.files&&input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const data=JSON.parse(reader.result),state=normalizeState(data.state||data);
+      if(!confirm('确定导入这个进度备份？当前进度会被覆盖。'))return;
+      S=state;save();updateHome();renderStats();updHdr();toast('进度已导入');
+    }catch(e){toast('导入失败：文件格式不对');}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+function resetAll(){if(!confirm('确定重置所有进度？不可撤销！'))return;localStorage.removeItem(SK);S=normalizeState({});save();updateHome();renderStats();toast('已重置');}
 
 updateHome();
 
