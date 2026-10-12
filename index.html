@@ -225,7 +225,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 <!-- XES Course: Mode Selection -->
 <div class="pg" id="page-xesc-mode">
-  <div class="ph"><button class="bb" onclick="showPg('xesc-lesson')" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2>学而思课程 · 选模式</h2></div>
+  <div class="ph"><button class="bb" onclick="showPg('xesc-lesson')" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2 id="xesc-mode-title">学而思课程 · 选模式</h2></div>
   <div class="mc" onclick="startQuiz('xesc','read')"><div class="em">📖</div><h3>认读模式</h3><p>看英文，选中文</p></div>
   <div class="mc" onclick="startQuiz('xesc','spell')"><div class="em">✏️</div><h3>拼写模式</h3><p>看中文，拼英文</p></div>
   <div class="mc" onclick="startQuiz('xesc','listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选单词</p></div>
@@ -426,7 +426,7 @@ loadDB().then(dbState=>{
 });
 requestPersistentStorage(false);
 
-let bank='',camLv='',mode='',selCats=[],selLessons=[],selPatternLessons=[],selDays=[],qWords=[],qi=0,qOk=0,qNo=0;
+let bank='',camLv='',mode='',selCats=[],selLessons=[],selPatternLessons=[],selDays=[],qWords=[],qi=0,qOk=0,qNo=0,quizBackPage='home';
 
 // === SPEECH ===
 let vr=false,ev=null;
@@ -506,15 +506,28 @@ function enterXESC(){
   let last='';
   document.getElementById('xesc-grid').innerHTML=groups.map((g,i)=>{
     let h='';if(g.section!==last){last=g.section;h='<div style="grid-column:1/-1;font-size:12px;font-weight:700;color:var(--txt2);padding:8px 2px 0;text-align:left">'+g.section+'</div>';}
-    return h+'<div class="cb" data-key="'+g.key+'" onclick="xescToggle(this)">'+g.lesson+'<span class="cn">'+g.m+'/'+g.cnt+'</span></div>';
+    return h+'<div class="cb" data-key="'+g.key+'" onclick="xescOpenLesson(this)">'+g.lesson+'<span class="cn">'+g.m+'/'+g.cnt+'</span></div>';
   }).join('');
   document.getElementById('xesc-lesson-go').disabled=true;
   showPg('xesc-lesson');
 }
+function xescOpenLesson(el){
+  const k=el.dataset.key;
+  selLessons=[k];
+  document.querySelectorAll('#xesc-grid .cb').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  xescPickMode();
+}
 function xescToggle(el){const k=el.dataset.key;const i=selLessons.indexOf(k);if(i>=0){selLessons.splice(i,1);el.classList.remove('sel');}else{selLessons.push(k);el.classList.add('sel');}document.getElementById('xesc-lesson-go').disabled=selLessons.length===0;}
 function xescSelectAll(){document.querySelectorAll('#xesc-grid .cb').forEach(b=>b.classList.add('sel'));selLessons=(window._xescGroups||[]).map(g=>g.key);document.getElementById('xesc-lesson-go').disabled=false;}
 function xescClearAll(){document.querySelectorAll('#xesc-grid .cb').forEach(b=>b.classList.remove('sel'));selLessons=[];document.getElementById('xesc-lesson-go').disabled=true;}
-function xescPickMode(){showPg('xesc-mode');}
+function xescPickMode(){
+  const title=document.getElementById('xesc-mode-title');
+  const groups=window._xescGroups||[];
+  const picked=groups.filter(g=>selLessons.includes(g.key));
+  title.textContent=picked.length===1?picked[0].section+' · '+picked[0].lesson:picked.length+'课 · 选模式';
+  showPg('xesc-mode');
+}
 
 
 
@@ -544,6 +557,7 @@ function startPatternQuiz(review){
   const wc=review?pool.length:Math.min(wp.length,Math.floor(pool.length*0.4));
   qWords=[...wp.slice(0,wc),...np.slice(0,20-wc)].sort(()=>Math.random()-0.5).slice(0,20);
   qi=0;qOk=0;qNo=0;
+  quizBackPage='xesp-lesson';
   document.getElementById('quiz-title').textContent='学而思句型 · 选择题';
   showPg('quiz');renderQ();
 }
@@ -640,6 +654,7 @@ function startQuiz(bk,m){
   }
   if(!qWords.length){toast('没有单词');return;}
   qi=0;qOk=0;qNo=0;
+  quizBackPage=bk==='xes'?'xes-mode':bk==='xesc'?'xesc-mode':(bk==='cam'&&m!=='review'?'cam-day':'cam-mode');
   const mn={read:'认读模式',spell:'拼写模式',listen:'听音选择',repeat:'跟读反馈',review:'错题回顾'};
   document.getElementById('quiz-title').textContent=(bank==='xes'?'学而思分类':bank==='xesc'?'学而思课程':'剑桥 '+LV_NAMES[camLv])+' · '+mn[mode];
   showPg('quiz');renderQ();
@@ -998,10 +1013,11 @@ function showResult(){
   const pct=Math.round(qOk/(qOk+qNo)*100);
   const em=pct>=90?'🏆':pct>=70?'🎉':pct>=50?'💪':'📚';
   const mg=pct>=90?'太棒了！':pct>=70?'很不错！':pct>=50?'继续加油！':'多多练习哦！';
-  document.getElementById('quiz-body').innerHTML='<div class="rs"><div class="be">'+em+'</div><h2>'+mg+'</h2><div class="sc">'+pct+'%</div><div class="dt">对 '+qOk+' · 错 '+qNo+' · +'+Math.max(qOk*2,0)+' ⭐</div><button class="btn" onclick="qi=0;qOk=0;qNo=0;renderQ();">再来一轮</button><button class="btn btn2" style="margin-top:8px" onclick="goHome()">回首页</button></div>';
+  document.getElementById('quiz-body').innerHTML='<div class="rs"><div class="be">'+em+'</div><h2>'+mg+'</h2><div class="sc">'+pct+'%</div><div class="dt">对 '+qOk+' · 错 '+qNo+' · +'+Math.max(qOk*2,0)+' ⭐</div><button class="btn" onclick="qi=0;qOk=0;qNo=0;renderQ();">再来一轮</button><button class="btn btn2" style="margin-top:8px" onclick="goQuizBack()">返回上一页</button><button class="btn btn2" style="margin-top:8px" onclick="goHome()">回首页</button></div>';
   document.getElementById('q-fill').style.width='100%';document.getElementById('q-cnt').textContent='完成！';
 }
-function confirmQuit(){if(qi>0&&!confirm('退出将丢失本轮进度'))return;goHome();}
+function goQuizBack(){showPg(quizBackPage||'home');}
+function confirmQuit(){if(qi>0&&qi<qWords.length&&!confirm('退出将丢失本轮进度'))return;goQuizBack();}
 
 // === STATS ===
 function renderStats(){
