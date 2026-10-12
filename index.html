@@ -901,7 +901,19 @@ function skipL(correct){
   showNext();
 }
 
-let repeatRec=null;
+let repeatRec=null,repeatStream=null,repeatAudioCtx=null,repeatTimer=null;
+function cleanupRepeatMic(){
+  if(repeatRec){try{repeatRec.abort();}catch(e){}repeatRec=null;}
+  if(repeatTimer){clearTimeout(repeatTimer);repeatTimer=null;}
+  if(repeatStream){repeatStream.getTracks().forEach(t=>t.stop());repeatStream=null;}
+  if(repeatAudioCtx){try{repeatAudioCtx.close();}catch(e){}repeatAudioCtx=null;}
+}
+function setRepeatListening(on){
+  const btn=document.getElementById('repeat-btn'),btnText=document.getElementById('repeat-btn-text');
+  if(!btn)return;
+  btn.classList.toggle('on',!!on);btn.disabled=!!on;
+  if(btnText)btnText.textContent=on?'正在收音，请现在读':'点这里开始跟读';
+}
 function normSpeech(s){
   return String(s||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9\s-]/g,' ').replace(/\s+/g,' ').trim();
 }
@@ -932,27 +944,26 @@ function speechScore(target,heard){
   return Math.max(0,1-editDist(target,heard)/max);
 }
 function renderRepeat(w,body){
-  if(repeatRec){try{repeatRec.abort();}catch(e){}repeatRec=null;}
+  cleanupRepeatMic();
   const ww=esc(w.w);
   body.innerHTML='<div class="repeat-box"><button class="spk" onclick="speak(\''+ww+'\')" title="听标准发音">🔊</button><div class="repeat-word">'+html(w.w)+'</div><div class="phn">'+html(w.p)+'</div><div class="repeat-meaning">'+html(w.c)+'</div><div class="repeat-tip">听完标准发音后，点击下面的大按钮开始跟读。</div><button class="repeat-listen" id="repeat-btn" onclick="startRepeat()" title="开始跟读"><span class="mic">🎙️</span><span id="repeat-btn-text">点这里开始跟读</span></button><div class="repeat-result" id="repeat-result">还没有开始收音。</div><div class="repeat-actions" id="repeat-actions" style="display:none"><button class="repeat-good" onclick="repeatNext(true)">读得不错，下一题</button><button class="repeat-again" onclick="repeatAgain()">再读一次</button><button class="repeat-hard" onclick="repeatNext(false)">还不熟，下一题</button></div></div>';
   setTimeout(()=>speak(w.w),300);
 }
 function startRepeat(){
   const w=qWords[qi],Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const res=document.getElementById('repeat-result'),btn=document.getElementById('repeat-btn');
-  const btnText=document.getElementById('repeat-btn-text');
+  const res=document.getElementById('repeat-result');
   document.getElementById('repeat-actions').style.display='none';
   if(_ca){_ca.pause();_ca=null;}
   if('speechSynthesis' in window)speechSynthesis.cancel();
   if(!Rec){
-    res.innerHTML='这个浏览器暂时不支持自动识别。可以让孩子读一遍后，由家长直接选择下面的结果。';
-    document.getElementById('repeat-actions').style.display='flex';
+    startAudioRepeat('这个浏览器不支持自动识别，已切换为普通麦克风收音检测。');
     return;
   }
   try{
-    if(repeatRec){try{repeatRec.abort();}catch(e){}}
+    cleanupRepeatMic();
     repeatRec=new Rec();repeatRec.lang='en-US';repeatRec.interimResults=false;repeatRec.maxAlternatives=3;
-    btn.classList.add('on');btn.disabled=true;if(btnText)btnText.textContent='正在收音，请现在读';
+    const rec=repeatRec;
+    setRepeatListening(true);
     res.innerHTML='<strong>正在收音...</strong><br>请对着手机或电脑麦克风清楚读出这个单词。';
     repeatRec.onresult=function(e){
       const list=e.results&&e.results[0]?Array.from(e.results[0]):[];
@@ -960,14 +971,52 @@ function startRepeat(){
       handleRepeatResult(w.w,heard);
     };
     repeatRec.onerror=function(e){
-      const msg=e&&e.error==='not-allowed'?'麦克风权限没有打开，请允许浏览器使用麦克风后再试。':'没有听清。点“再读一次”后，看到红色按钮提示“正在收音”时再读。';
-      res.innerHTML=msg;
-      document.getElementById('repeat-actions').style.display='flex';
+      setRepeatListening(false);
+      startAudioRepeat('语音识别在这个浏览器上不可用，已改用普通麦克风收音检测。');
     };
-    repeatRec.onend=function(){btn.classList.remove('on');btn.disabled=false;if(btnText)btnText.textContent='点这里开始跟读';};
+    repeatRec.onend=function(){if(repeatRec===rec)setRepeatListening(false);};
     repeatRec.start();
   }catch(e){
-    res.innerHTML='麦克风启动失败。请检查浏览器权限，或先用手动反馈继续练习。';
+    startAudioRepeat('语音识别启动失败，已改用普通麦克风收音检测。');
+  }
+}
+async function startAudioRepeat(prefix){
+  const res=document.getElementById('repeat-result');
+  document.getElementById('repeat-actions').style.display='none';
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){
+    res.innerHTML='这个浏览器不能直接调用麦克风。可以让孩子读一遍后，由家长选择下面的结果。';
+    document.getElementById('repeat-actions').style.display='flex';
+    return;
+  }
+  cleanupRepeatMic();setRepeatListening(true);
+  res.innerHTML='<strong>正在收音...</strong><br>'+(prefix||'')+'<br>请现在读这个单词，大约 2 秒后给出反馈。';
+  try{
+    repeatStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const Ctx=window.AudioContext||window.webkitAudioContext;
+    repeatAudioCtx=new Ctx();
+    const src=repeatAudioCtx.createMediaStreamSource(repeatStream);
+    const analyser=repeatAudioCtx.createAnalyser();
+    analyser.fftSize=1024;src.connect(analyser);
+    const data=new Uint8Array(analyser.fftSize);
+    let peak=0,samples=0;
+    const tick=function(){
+      analyser.getByteTimeDomainData(data);
+      let sum=0;
+      for(let i=0;i<data.length;i++){const v=(data[i]-128)/128;sum+=v*v;}
+      const rms=Math.sqrt(sum/data.length);peak=Math.max(peak,rms);samples++;
+    };
+    const iv=setInterval(tick,90);
+    repeatTimer=setTimeout(function(){
+      clearInterval(iv);repeatTimer=null;setRepeatListening(false);
+      const heard=peak>.025&&samples>3;
+      cleanupRepeatMic();
+      res.innerHTML=heard?'<strong>收到声音了</strong><br>这次跟读有收音。家长可以听孩子读得是否清楚，再选择下一步。':'<strong>没有明显收到声音</strong><br>请靠近麦克风，看到按钮变红后再开始读。';
+      document.getElementById('repeat-actions').style.display='flex';
+    },2200);
+  }catch(e){
+    setRepeatListening(false);cleanupRepeatMic();
+    const blocked=e&&/NotAllowed|Permission|Security/i.test(e.name||e.message||'');
+    res.innerHTML=blocked?'系统或浏览器没有放行麦克风。请检查当前浏览器的网站权限，或换 Chrome/Edge 类浏览器再试。':'麦克风启动失败。可以让孩子读一遍后，由家长选择下面的结果。';
     document.getElementById('repeat-actions').style.display='flex';
   }
 }
@@ -986,7 +1035,7 @@ function repeatAgain(){
   speak(w.w);
 }
 function repeatNext(ok){
-  if(repeatRec){try{repeatRec.abort();}catch(e){}repeatRec=null;}
+  cleanupRepeatMic();
   if(ok)doOk();else doNo();
   qi++;renderQ();
 }
