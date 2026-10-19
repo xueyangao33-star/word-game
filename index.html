@@ -207,7 +207,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div class="ph"><button class="bb" onclick="showPg('xes-cat')" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2>学而思 · 选模式</h2></div>
   <div class="mc" onclick="startQuiz('xes','read')"><div class="em">📖</div><h3>认读模式</h3><p>看英文，选中文</p></div>
   <div class="mc" onclick="startQuiz('xes','spell')"><div class="em">✏️</div><h3>拼写模式</h3><p>看中文，拼英文</p></div>
-  <div class="mc" onclick="startQuiz('xes','listen')"><div class="em">🎧</div><h3>跟读模式</h3><p>听发音，选单词</p></div>
+  <div class="mc" onclick="startQuiz('xes','listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选中文意思</p></div>
   <div class="mc" onclick="startQuiz('xes','review')"><div class="em">🔄</div><h3>错题回顾</h3><p>复习学而思错题</p></div>
 </div>
 
@@ -228,7 +228,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div class="ph"><button class="bb" onclick="showPg('xesc-lesson')" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2 id="xesc-mode-title">学而思课程 · 选模式</h2></div>
   <div class="mc" onclick="startQuiz('xesc','read')"><div class="em">📖</div><h3>认读模式</h3><p>看英文，选中文</p></div>
   <div class="mc" onclick="startQuiz('xesc','spell')"><div class="em">✏️</div><h3>拼写模式</h3><p>看中文，拼英文</p></div>
-  <div class="mc" onclick="startQuiz('xesc','listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选单词</p></div>
+  <div class="mc" onclick="startQuiz('xesc','listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选中文意思</p></div>
   <div class="mc" onclick="startQuiz('xesc','review')"><div class="em">🔄</div><h3>错题回顾</h3><p>复习课程顺序错题</p></div>
 </div>
 
@@ -268,7 +268,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div class="ph"><button class="bb" onclick="showPg('cam-lv')" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2 id="cam-mode-title">剑桥 · 选模式</h2></div>
   <div class="mc" onclick="camPickMode('read')"><div class="em">📖</div><h3>认读模式</h3><p>看英文，选中文</p></div>
   <div class="mc" onclick="camPickMode('spell')"><div class="em">✏️</div><h3>拼写模式</h3><p>看中文，拼英文</p></div>
-  <div class="mc" onclick="camPickMode('listen')"><div class="em">🎧</div><h3>跟读模式</h3><p>听发音，选单词</p></div>
+  <div class="mc" onclick="camPickMode('listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选中文意思</p></div>
   <div class="mc" onclick="camPickMode('review')"><div class="em">🔄</div><h3>错题回顾</h3><p>复习本等级错题</p></div>
 </div>
 
@@ -688,9 +688,12 @@ function getPool(){
 function getOpts(correct,key,n){
   n=n||4;const pool=getPool();
   let opts=[correct[key]];
-  let sameDay=pool.filter(x=>(bank==='xes'?x.g===correct.g:x.day===correct.day)&&x[key]!==correct[key]).map(x=>x[key]);
+  let sameDay=pool.filter(x=>{
+    const same=bank==='xes'?x.g===correct.g:bank==='xesc'?(x.section===correct.section&&x.lesson===correct.lesson):x.day===correct.day;
+    return same&&x[key]!==correct[key];
+  }).map(x=>x[key]).filter((v,i,a)=>v&&a.indexOf(v)===i);
   sameDay.sort(()=>Math.random()-0.5);
-  let others=pool.filter(x=>x[key]!==correct[key]&&!sameDay.includes(x[key])).map(x=>x[key]);
+  let others=pool.filter(x=>x[key]!==correct[key]&&!sameDay.includes(x[key])).map(x=>x[key]).filter((v,i,a)=>v&&a.indexOf(v)===i);
   others.sort(()=>Math.random()-0.5);
   let all=[...sameDay,...others];
   for(let i=0;opts.length<n&&i<all.length;i++) if(!opts.includes(all[i]))opts.push(all[i]);
@@ -884,8 +887,8 @@ function spSkip(){
 }
 
 function renderListen(w,body){
-  const opts=getOpts(w,'w');
-  body.innerHTML='<div class="wd"><div style="font-size:56px;cursor:pointer;line-height:1.2" onclick="speak(\''+w.w.replace(/'/g,"\\'")+'\');">🔊</div><div class="phn">'+w.p+'</div><div style="font-size:12px;color:var(--txt2);margin-top:6px">听发音，选单词</div></div><div class="opts">'+opts.map(o=>'<div class="ob" onclick="checkL(this,\''+esc(o)+'\',\''+esc(w.w)+'\')">'+o+'</div>').join('')+'</div><div style="text-align:center;margin-top:12px"><button class="btn btn2" style="display:inline-block;width:auto;padding:10px 28px;font-size:14px" onclick="skipL(\''+esc(w.w)+'\')">不知道 ✋</button></div>';
+  const opts=getOpts(w,'c');
+  body.innerHTML='<div class="wd"><div style="font-size:56px;cursor:pointer;line-height:1.2" onclick="speak(\''+w.w.replace(/'/g,"\\'")+'\');">🔊</div><div style="font-size:12px;color:var(--txt2);margin-top:6px">听英文发音，选择中文意思</div></div><div class="opts">'+opts.map(o=>'<div class="ob" onclick="checkL(this,\''+esc(o)+'\',\''+esc(w.c)+'\')">'+o+'</div>').join('')+'</div><div style="text-align:center;margin-top:12px"><button class="btn btn2" style="display:inline-block;width:auto;padding:10px 28px;font-size:14px" onclick="skipL(\''+esc(w.c)+'\')">不知道 ✋</button></div>';
   setTimeout(()=>speak(w.w),400);
 }
 function checkL(el,pick,correct){
