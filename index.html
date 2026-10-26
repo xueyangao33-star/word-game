@@ -229,7 +229,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div class="mc" onclick="startQuiz('xesc','read')"><div class="em">📖</div><h3>认读模式</h3><p>看英文，选中文</p></div>
   <div class="mc" onclick="startQuiz('xesc','spell')"><div class="em">✏️</div><h3>拼写模式</h3><p>看中文，拼英文</p></div>
   <div class="mc" onclick="startQuiz('xesc','listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选中文意思</p></div>
-  <div class="mc" onclick="startRollingReview()"><div class="em">🗓️</div><h3>滚动背词</h3><p id="xesc-review-summary">按遗忘曲线安排复习</p></div>
   <div class="mc" onclick="startQuiz('xesc','review')"><div class="em">🔄</div><h3>错题回顾</h3><p>复习课程顺序错题</p></div>
 </div>
 
@@ -546,9 +545,9 @@ function reviewCounts(){
   return {fresh,due,scheduled};
 }
 function updateRollingSummary(){
-  const el=document.getElementById('xesc-review-summary');if(!el)return;
   const n=reviewCounts();
-  el.textContent=n.due||n.fresh?'今日 '+n.due+' 个待复习 · '+n.fresh+' 个新词':'今日已完成，下一轮按计划安排';
+  const el=document.getElementById('xesc-review-summary');
+  if(el)el.textContent=n.due||n.fresh?'今日 '+n.due+' 个待复习 · '+n.fresh+' 个新词':'今日已完成，下一轮按计划安排';
   const home=document.getElementById('xesc-home-review');
   if(home)home.textContent=n.due?'今日 '+n.due+' 个待复习':n.fresh?'可学习 '+Math.min(8,n.fresh)+' 个新词':'今日已完成';
 }
