@@ -169,6 +169,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="badge">🗂️</div>
   </div>
 
+  <div class="bk" style="border-left:4px solid #8B5CF6" onclick="startRollingReview()">
+    <h3>学而思滚动背词</h3>
+    <p>新词 + 到期复习 · 按遗忘曲线滚动安排</p>
+    <div class="pi" id="xesc-home-review">今日待复习</div>
+    <div class="badge">🗓️</div>
+  </div>
+
 
   <div class="bk" style="border-left:4px solid #F59E0B" onclick="enterXESP()">
     <h3>学而思句型选择</h3>
@@ -542,6 +549,8 @@ function updateRollingSummary(){
   const el=document.getElementById('xesc-review-summary');if(!el)return;
   const n=reviewCounts();
   el.textContent=n.due||n.fresh?'今日 '+n.due+' 个待复习 · '+n.fresh+' 个新词':'今日已完成，下一轮按计划安排';
+  const home=document.getElementById('xesc-home-review');
+  if(home)home.textContent=n.due?'今日 '+n.due+' 个待复习':n.fresh?'可学习 '+Math.min(8,n.fresh)+' 个新词':'今日已完成';
 }
 function startRollingReview(){
   bank='xesc';mode='rolling';
