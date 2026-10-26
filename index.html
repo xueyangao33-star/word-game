@@ -151,7 +151,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 <div class="hd">
   <h1>📚 单词闯关</h1>
-  <div class="sub">学而思 + 剑桥少儿英语 · 3010词 · 800句型题</div>
+  <div class="sub">学而思课程顺序 + 剑桥少儿英语 · 2349词 · 800句型题</div>
   <div class="sb">
     <div class="si"><div class="n" id="h-stars">0</div><div class="l">⭐ 星星</div></div>
     <div class="si"><div class="n" id="h-level">1</div><div class="l">🏆 等级</div></div>
@@ -162,16 +162,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <!-- HOME -->
 <div class="pg act" id="page-home">
   <div style="margin-bottom:10px;font-size:14px;color:var(--txt2);text-align:center">选择词库开始练习</div>
-  <div class="bk bk-xes" onclick="enterXES()">
-    <h3>学而思英语</h3>
-    <p>22个分类 · 661个单词</p>
-    <div class="pi" id="xes-prog">0/661 已掌握</div>
-    <div class="badge">📖</div>
-  </div>
-
   <div class="bk" style="border-left:4px solid #10B981" onclick="enterXESC()">
     <h3>学而思课程顺序</h3>
-    <p>8期 · 80课 · 848个单词</p>
+    <p>8期 · 80课 · 848个单词 · 含滚动背词</p>
     <div class="pi" id="xesc-prog">0/848 已掌握</div>
     <div class="badge">🗂️</div>
   </div>
@@ -229,6 +222,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
   <div class="mc" onclick="startQuiz('xesc','read')"><div class="em">📖</div><h3>认读模式</h3><p>看英文，选中文</p></div>
   <div class="mc" onclick="startQuiz('xesc','spell')"><div class="em">✏️</div><h3>拼写模式</h3><p>看中文，拼英文</p></div>
   <div class="mc" onclick="startQuiz('xesc','listen')"><div class="em">🎧</div><h3>听音选择</h3><p>听发音，选中文意思</p></div>
+  <div class="mc" onclick="startRollingReview()"><div class="em">🗓️</div><h3>滚动背词</h3><p id="xesc-review-summary">按遗忘曲线安排复习</p></div>
   <div class="mc" onclick="startQuiz('xesc','review')"><div class="em">🔄</div><h3>错题回顾</h3><p>复习课程顺序错题</p></div>
 </div>
 
@@ -296,8 +290,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <!-- STATS -->
 <div class="pg" id="page-stats">
   <div class="ph"><h2>📊 学习统计</h2></div>
-  <div class="sc2"><h4>⭐ 总体进度</h4><div class="big" id="s-total">0 / 2162</div></div>
-  <div class="sc2"><h4>📖 学而思分类 (661词)</h4><div id="s-xes"></div></div>
+  <div class="sc2"><h4>⭐ 总体进度</h4><div class="big" id="s-total">0 / 2349</div></div>
   <div class="sc2"><h4>🗂️ 学而思课程顺序 (848词)</h4><div id="s-xesc"></div></div>
   <div class="sc2"><h4>✅ 学而思句型选择 (800题)</h4><div id="s-xesp"></div></div>
   <div class="sc2"><h4>🎓 剑桥 (1501词)</h4><div id="s-cam"></div></div>
@@ -342,13 +335,15 @@ const LV_NAMES={L1:'L1 初阶',L2:'L2 进阶',L3:'L3 高阶'};
 
 // === STATE ===
 const SK='vocab_unified_v2';
-const DEFAULT_STATE={stars:0,level:1,streak:0,maxStreak:0,tOk:0,tNo:0,wrong:{},mastered:{},daily:{}};
+const DEFAULT_STATE={stars:0,level:1,streak:0,maxStreak:0,tOk:0,tNo:0,wrong:{},mastered:{},daily:{},review:{},reviewCursor:0};
 function normalizeState(s){
   s=s&&typeof s==='object'?s:{};
   const out=Object.assign({},DEFAULT_STATE,s);
   out.wrong=out.wrong&&typeof out.wrong==='object'?out.wrong:{};
   out.mastered=out.mastered&&typeof out.mastered==='object'?out.mastered:{};
   out.daily=out.daily&&typeof out.daily==='object'?out.daily:{};
+  out.review=out.review&&typeof out.review==='object'?out.review:{};
+  out.reviewCursor=Number.isFinite(Number(out.reviewCursor))?Math.max(0,Math.floor(Number(out.reviewCursor))):0;
   ['stars','level','streak','maxStreak','tOk','tNo'].forEach(k=>{out[k]=Number(out[k])||DEFAULT_STATE[k];});
   return out;
 }
@@ -466,14 +461,13 @@ function updateHome(){
   document.getElementById('h-stars').textContent=S.stars;
   document.getElementById('h-level').textContent=S.level;
   document.getElementById('h-streak').textContent=S.streak;
-  const xm=XES.filter(w=>S.mastered['x:'+w.w]).length;
-  document.getElementById('xes-prog').textContent=xm+'/661 已掌握';
   const xcm=XES_COURSE.filter(w=>S.mastered['xl:'+w.k]).length;
   const xcp=document.getElementById('xesc-prog');if(xcp)xcp.textContent=xcm+'/848 已掌握';
   const xpm=XES_PATTERN_QUESTIONS.filter(q=>S.mastered['xp:'+q.k]).length;
   const xpp=document.getElementById('xesp-prog');if(xpp)xpp.textContent=xpm+'/800 已掌握';
   let cm=0;for(const lv of['L1','L2','L3'])cm+=CAM[lv].filter(w=>S.mastered['c'+lv+':'+w.w]).length;
   document.getElementById('cam-prog').textContent=cm+'/1501 已掌握';
+  updateRollingSummary();
 }
 
 // === XES FLOW ===
@@ -526,6 +520,54 @@ function xescPickMode(){
   const picked=groups.filter(g=>selLessons.includes(g.key));
   title.textContent=picked.length===1?picked[0].section+' · '+picked[0].lesson:picked.length+'课 · 选模式';
   showPg('xesc-mode');
+}
+
+// Rolling review uses the course-order list as a single queue. Each word moves
+// to a longer interval after a confident recall and returns quickly after an error.
+const REVIEW_INTERVAL_DAYS=[0,1,3,7,14,30];
+function reviewRecord(w){
+  return S.review[w.k]||{box:0,dueAt:0,seen:0,ok:0,no:0};
+}
+function reviewCounts(){
+  const now=Date.now();let fresh=0,due=0,scheduled=0;
+  XES_COURSE.forEach(w=>{
+    const r=S.review[w.k];
+    if(!r||!r.seen)fresh++;
+    else if((r.dueAt||0)<=now)due++;
+    else scheduled++;
+  });
+  return {fresh,due,scheduled};
+}
+function updateRollingSummary(){
+  const el=document.getElementById('xesc-review-summary');if(!el)return;
+  const n=reviewCounts();
+  el.textContent=n.due||n.fresh?'今日 '+n.due+' 个待复习 · '+n.fresh+' 个新词':'今日已完成，下一轮按计划安排';
+}
+function startRollingReview(){
+  bank='xesc';mode='rolling';
+  const now=Date.now();
+  const due=XES_COURSE.filter(w=>{const r=S.review[w.k];return r&&r.seen&&(r.dueAt||0)<=now;}).sort(()=>Math.random()-0.5);
+  const fresh=[];
+  for(let step=0;step<XES_COURSE.length&&fresh.length<8;step++){
+    const idx=(S.reviewCursor+step)%XES_COURSE.length,w=XES_COURSE[idx],r=S.review[w.k];
+    if(!r||!r.seen)fresh.push(w);
+  }
+  if(fresh.length){
+    const last=XES_COURSE.indexOf(fresh[fresh.length-1]);
+    S.reviewCursor=(last+1)%XES_COURSE.length;save();
+  }
+  qWords=[...due.slice(0,12),...fresh].slice(0,20);
+  if(qWords.length<20)qWords=[...qWords,...due.slice(12,20-qWords.length)];
+  if(!qWords.length){toast('今天没有到期单词，下一轮复习会自动安排！');return;}
+  qi=0;qOk=0;qNo=0;quizBackPage='xesc-mode';
+  document.getElementById('quiz-title').textContent='学而思课程 · 滚动背词';
+  showPg('quiz');renderQ();
+}
+function updateRollingRecord(w,ok){
+  const old=reviewRecord(w),box=Number(old.box)||0;
+  const next=ok?Math.min(box+1,REVIEW_INTERVAL_DAYS.length-1):0;
+  const delay=ok?REVIEW_INTERVAL_DAYS[next]*86400000:10*60*1000;
+  S.review[w.k]={box:next,dueAt:Date.now()+delay,seen:(old.seen||0)+1,ok:(old.ok||0)+(ok?1:0),no:(old.no||0)+(ok?0:1)};
 }
 
 
@@ -654,7 +696,7 @@ function startQuiz(bk,m){
   if(!qWords.length){toast('没有单词');return;}
   qi=0;qOk=0;qNo=0;
   quizBackPage=bk==='xes'?'xes-mode':bk==='xesc'?'xesc-mode':(bk==='cam'&&m!=='review'?'cam-day':'cam-mode');
-  const mn={read:'认读模式',spell:'拼写模式',listen:'听音选择',repeat:'跟读反馈',review:'错题回顾'};
+  const mn={read:'认读模式',spell:'拼写模式',listen:'听音选择',repeat:'跟读反馈',review:'错题回顾',rolling:'滚动背词'};
   document.getElementById('quiz-title').textContent=(bank==='xes'?'学而思分类':bank==='xesc'?'学而思课程':'剑桥 '+LV_NAMES[camLv])+' · '+mn[mode];
   showPg('quiz');renderQ();
 }
@@ -666,6 +708,7 @@ function renderQ(){
   document.getElementById('q-cnt').textContent=(qi+1)+'/'+qWords.length;
   const body=document.getElementById('quiz-body');
   if(mode==='pattern')renderPattern(w,body);
+  else if(mode==='rolling')renderRolling(w,body);
   else if(mode==='read')renderRead(w,body);
   else if(mode==='spell')renderSpell(w,body);
   else if(mode==='repeat')renderRepeat(w,body);
@@ -715,6 +758,21 @@ function skipP(correct){
   document.querySelectorAll('.ob').forEach(b=>{b.style.pointerEvents='none';if(b.textContent===correct)b.classList.add('ok');});
   doNo();toast('已标记为不会');
   showNext();
+}
+
+function renderRolling(w,body){
+  body.innerHTML='<div class="wd"><div style="font-size:12px;color:var(--txt2);margin-bottom:8px">课程滚动词卡</div><div class="eng">'+html(w.w)+'</div><div class="phn">'+html(w.p||'')+'</div><div class="spk" onclick="speak(\''+w.w.replace(/'/g,"\\'")+'\');">🔊</div><button class="btn btn2" style="margin:14px auto 0;width:auto;padding:9px 22px" onclick="showRollingMeaning()">显示释义</button><div id="rolling-meaning" style="display:none;font-size:19px;color:var(--txt);margin-top:14px">'+html(w.c||'')+'</div></div><div id="rolling-actions" style="display:none;gap:8px;margin-top:14px"><button class="btn" style="flex:1;margin:0;background:var(--ok)" onclick="answerRolling(true)">认识</button><button class="btn btn2" style="flex:1;margin:0" onclick="answerRolling(false)">不熟，再看</button></div><div style="text-align:center;color:var(--txt2);font-size:12px;margin-top:12px">认识后会延长复习间隔，不熟的单词约 10 分钟后再出现</div>';
+  setTimeout(()=>speak(w.w),150);
+}
+function showRollingMeaning(){
+  const m=document.getElementById('rolling-meaning'),a=document.getElementById('rolling-actions');
+  if(m)m.style.display='block';if(a)a.style.display='flex';
+}
+function answerRolling(ok){
+  const w=qWords[qi];
+  if(ok)doOk();else doNo();
+  updateRollingSummary();
+  qi++;renderQ();
 }
 
 function renderRead(w,body){
@@ -1049,12 +1107,14 @@ function doOk(hint){
   const st=hint?1:(S.streak>=5?3:2);S.stars+=st;
   const nl=Math.floor(S.stars/20)+1;if(nl>S.level){S.level=nl;toast('🎉 升级！等级'+S.level);}
   S.mastered[mkey(qWords[qi])]=true;delete S.wrong[mkey(qWords[qi])];
+  if(bank==='xesc'&&mode==='rolling')updateRollingRecord(qWords[qi],true);
   const td=new Date().toISOString().slice(0,10);if(!S.daily[td])S.daily[td]={c:0,w:0};S.daily[td].c++;
   starBurst();save();updHdr();
 }
 function doNo(){
   qNo++;S.tNo++;S.streak=0;
   const k=mkey(qWords[qi]);S.wrong[k]=(S.wrong[k]||0)+1;
+  if(bank==='xesc'&&mode==='rolling')updateRollingRecord(qWords[qi],false);
   const td=new Date().toISOString().slice(0,10);if(!S.daily[td])S.daily[td]={c:0,w:0};S.daily[td].w++;
   save();updHdr();
 }
@@ -1064,7 +1124,8 @@ function showResult(){
   const pct=Math.round(qOk/(qOk+qNo)*100);
   const em=pct>=90?'🏆':pct>=70?'🎉':pct>=50?'💪':'📚';
   const mg=pct>=90?'太棒了！':pct>=70?'很不错！':pct>=50?'继续加油！':'多多练习哦！';
-  document.getElementById('quiz-body').innerHTML='<div class="rs"><div class="be">'+em+'</div><h2>'+mg+'</h2><div class="sc">'+pct+'%</div><div class="dt">对 '+qOk+' · 错 '+qNo+' · +'+Math.max(qOk*2,0)+' ⭐</div><button class="btn" onclick="qi=0;qOk=0;qNo=0;renderQ();">再来一轮</button><button class="btn btn2" style="margin-top:8px" onclick="goQuizBack()">返回上一页</button><button class="btn btn2" style="margin-top:8px" onclick="goHome()">回首页</button></div>';
+  const again=mode==='rolling'?'startRollingReview()':'qi=0;qOk=0;qNo=0;renderQ()';
+  document.getElementById('quiz-body').innerHTML='<div class="rs"><div class="be">'+em+'</div><h2>'+mg+'</h2><div class="sc">'+pct+'%</div><div class="dt">对 '+qOk+' · 错 '+qNo+' · +'+Math.max(qOk*2,0)+' ⭐</div><button class="btn" onclick="'+again+'">再来一轮</button><button class="btn btn2" style="margin-top:8px" onclick="goQuizBack()">返回上一页</button><button class="btn btn2" style="margin-top:8px" onclick="goHome()">回首页</button></div>';
   document.getElementById('q-fill').style.width='100%';document.getElementById('q-cnt').textContent='完成！';
 }
 function goQuizBack(){showPg(quizBackPage||'home');}
@@ -1075,8 +1136,6 @@ function renderStats(){
   updHdr();
   updateStorageStatus();
   let tm=0;
-  const xm=XES.filter(w=>S.mastered['x:'+w.w]).length;tm+=xm;
-  document.getElementById('s-xes').innerHTML='<div style="font-size:13px">已掌握 '+xm+'/661 ('+Math.round(xm/661*100)+'%)</div><div style="height:6px;background:#E2E8F0;border-radius:3px;margin-top:4px;overflow:hidden"><div style="height:100%;width:'+Math.round(xm/661*100)+'%;background:var(--pri);border-radius:3px"></div></div>';
   const xcm=XES_COURSE.filter(w=>S.mastered['xl:'+w.k]).length;tm+=xcm;
   document.getElementById('s-xesc').innerHTML='<div style="font-size:13px">已掌握 '+xcm+'/848 ('+Math.round(xcm/848*100)+'%)</div><div style="height:6px;background:#E2E8F0;border-radius:3px;margin-top:4px;overflow:hidden"><div style="height:100%;width:'+Math.round(xcm/848*100)+'%;background:#10B981;border-radius:3px"></div></div>';
   const xpm=XES_PATTERN_QUESTIONS.filter(q=>S.mastered['xp:'+q.k]).length;
@@ -1089,17 +1148,14 @@ function renderStats(){
     camH+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0"><span style="font-weight:700;width:24px;color:'+cl+'">'+lv+'</span><div style="flex:1"><div style="font-size:11px">'+m+'/'+CAM_TOTALS[lv]+'</div><div style="height:5px;background:#E2E8F0;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+p+'%;background:'+cl+';border-radius:3px"></div></div></div><span style="font-size:12px;color:var(--txt2)">'+p+'%</span></div>';
   }
   document.getElementById('s-cam').innerHTML=camH;
-  document.getElementById('s-total').textContent=tm+' / 3010';
+  document.getElementById('s-total').textContent=tm+' / 2349';
   document.getElementById('s-ok').textContent=S.tOk;
   document.getElementById('s-no').textContent=S.tNo;
   document.getElementById('s-ms').textContent=S.maxStreak;
   // Wrong words
-  const wk=Object.keys(S.wrong);
+  const wk=Object.keys(S.wrong).filter(k=>!k.startsWith('x:'));
   if(!wk.length){document.getElementById('s-wl').innerHTML='<div style="color:var(--ok)">暂无错题 🎉</div>';return;}
   let wh='';
-  // XES wrong
-  const xw=XES.filter(w=>S.wrong['x:'+w.w]);
-  if(xw.length)wh+='<div style="margin-top:6px"><strong>学而思分类</strong>('+xw.length+'): '+xw.slice(0,30).map(w=>w.w).join(', ')+(xw.length>30?'...':'')+'</div>';
   const xlw=XES_COURSE.filter(w=>S.wrong['xl:'+w.k]);
   if(xlw.length)wh+='<div style="margin-top:6px"><strong>学而思课程</strong>('+xlw.length+'): '+xlw.slice(0,30).map(w=>w.lesson+' '+w.w).join(', ')+(xlw.length>30?'...':'')+'</div>';
   const xpw=XES_PATTERN_QUESTIONS.filter(q=>S.wrong['xp:'+q.k]);
