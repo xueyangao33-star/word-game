@@ -898,7 +898,7 @@ function wyDrawSpell(target){
   const slots=document.getElementById('wy-slots'),kb=document.getElementById('wy-keyboard');if(!slots||!kb)return;
   slots.innerHTML=Array.from(target).map((ch,i)=>ch===' '?'<span style="width:12px"></span>':'<span style="display:inline-flex;width:27px;height:32px;align-items:center;justify-content:center;border-bottom:2px solid var(--pri);font-size:21px;font-weight:700">'+html(wyTyped[i]||'_')+'</span>').join('');
   const chars='abcdefghijklmnopqrstuvwxyz'.split('').concat([' ',"'",'-','/']);
-  kb.innerHTML=chars.map(ch=>'<button class="btn btn2" style="min-width:0;padding:8px 2px;font-size:14px" onclick="wyType('+html(JSON.stringify(ch))+')">'+(ch===' '?'空格':ch.toUpperCase())+'</button>').join('');
+  kb.innerHTML=chars.map(ch=>'<button class="btn btn2" style="min-width:0;padding:8px 2px;font-size:14px" onclick="wyType('+html(JSON.stringify(ch))+')">'+(ch===' '?'空格':ch)+'</button>').join('');
 }
 function wyType(ch){if(wyAnswered)return;const t=wyTarget(qWords[qi]);if(wyTyped.length<t.length){wyTyped+=ch;wyDrawSpell(t);}}
 function wyBackspace(){if(wyAnswered)return;wyTyped=wyTyped.slice(0,-1);wyDrawSpell(wyTarget(qWords[qi]));}
