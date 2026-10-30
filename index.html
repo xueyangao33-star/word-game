@@ -454,7 +454,7 @@ loadDB().then(dbState=>{
 });
 requestPersistentStorage(false);
 
-let bank='',camLv='',mode='',selCats=[],selLessons=[],selPatternLessons=[],selDays=[],selWYBooks=[],qWords=[],qi=0,qOk=0,qNo=0,quizBackPage='home',wyTyped='',wyAnswered=false;
+let bank='',camLv='',mode='',selCats=[],selLessons=[],selPatternLessons=[],selDays=[],selWYBooks=[],qWords=[],qi=0,qOk=0,qNo=0,quizBackPage='home',wyTyped='',wyAnswered=false,wyChoices=[];
 
 // === SPEECH ===
 let vr=false,ev=null;
@@ -893,7 +893,8 @@ function chunkWord(word){
 }
 
 function renderWYSpell(w,body){
-  wyTyped='';wyAnswered=false;
+  wyTyped='';wyAnswered=false;wyChoices=Array.from(wyTarget(w));
+  for(let i=wyChoices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[wyChoices[i],wyChoices[j]]=[wyChoices[j],wyChoices[i]];}
   body.innerHTML='<div class="wd"><div style="font-size:11px;color:var(--txt2)">外研新起点 · '+html(w.book)+' · '+html(w.module)+'</div><div class="cnword">'+html(formatWYMeaning(w.c||WY_MEANINGS[w.w]||'本课词汇'))+'</div><div class="spk" onclick="speak('+esc(w.w)+')">🔊</div><div id="wy-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:14px 0"></div></div><div id="wy-keyboard" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:430px;margin:0 auto"></div><div id="wy-result" style="min-height:28px;text-align:center;margin:10px 0;font-size:13px"></div><div style="display:flex;gap:6px"><button class="btn btn2" style="flex:1" onclick="wyBackspace()">⌫</button><button class="btn btn2" style="flex:1" onclick="wyClear()">清空</button><button class="btn" style="flex:2" onclick="wyCheck()">检查</button></div><div id="wy-next" style="display:none;margin-top:8px"><button class="btn" onclick="wyNext()">下一题 →</button></div>';
   wyDrawSpell(wyTarget(w));
 }
@@ -902,8 +903,9 @@ function wyNorm(s){return String(s||'').toLowerCase().replace(/[’']/g,"'").rep
 function wyDrawSpell(target){
   const slots=document.getElementById('wy-slots'),kb=document.getElementById('wy-keyboard');if(!slots||!kb)return;
   slots.innerHTML=Array.from(target).map((ch,i)=>ch===' '?'<span style="width:12px"></span>':'<span style="display:inline-flex;width:27px;height:32px;align-items:center;justify-content:center;border-bottom:2px solid var(--pri);font-size:21px;font-weight:700">'+html(wyTyped[i]||'_')+'</span>').join('');
-  const chars='abcdefghijklmnopqrstuvwxyz'.split('').concat([' ',"'",'-','/']);
-  kb.innerHTML=chars.map(ch=>'<button class="btn btn2" style="min-width:0;padding:8px 2px;font-size:14px" onclick="wyType('+html(JSON.stringify(ch))+')">'+(ch===' '?'空格':ch)+'</button>').join('');
+  const used={};for(const ch of wyTyped)used[ch]=(used[ch]||0)+1;
+  const seen={};
+  kb.innerHTML=wyChoices.map(ch=>{const n=seen[ch]||0;seen[ch]=n+1;const disabled=n>=(used[ch]||0);return '<button class="btn btn2" style="min-width:0;padding:8px 2px;font-size:14px;'+(disabled?'opacity:.35':'')+'" '+(disabled?'disabled':'')+' onclick="wyType('+html(JSON.stringify(ch))+')">'+(ch===' '?'空格':html(ch))+'</button>';}).join('');
 }
 function wyType(ch){if(wyAnswered)return;const t=wyTarget(qWords[qi]);if(wyTyped.length<t.length){wyTyped+=ch;wyDrawSpell(t);}}
 function wyBackspace(){if(wyAnswered)return;wyTyped=wyTyped.slice(0,-1);wyDrawSpell(wyTarget(qWords[qi]));}
