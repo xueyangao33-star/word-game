@@ -263,6 +263,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <button class="hb btn-sm" style="flex:1;margin:0" onclick="wyClearAll()">清空</button>
   </div>
   <div class="cg" id="wy-grid"></div>
+  <div id="wy-unit-wrap" style="display:none;margin-top:12px">
+    <div style="font-size:13px;color:var(--txt2);margin:8px 0">再选择 Unit（可多选）</div>
+    <div class="cg" id="wy-unit-grid"></div>
+  </div>
   <button class="btn" id="wy-go" disabled onclick="startWYSpell()">开始纯拼写</button>
 </div>
 
@@ -454,7 +458,7 @@ loadDB().then(dbState=>{
 });
 requestPersistentStorage(false);
 
-let bank='',camLv='',mode='',selCats=[],selLessons=[],selPatternLessons=[],selDays=[],selWYBooks=[],qWords=[],qi=0,qOk=0,qNo=0,quizBackPage='home',wyTyped='',wyAnswered=false,wyChoices=[];
+let bank='',camLv='',mode='',selCats=[],selLessons=[],selPatternLessons=[],selDays=[],selWYBooks=[],selWYUnits=[],qWords=[],qi=0,qOk=0,qNo=0,quizBackPage='home',wyTyped='',wyAnswered=false,wyChoices=[];
 
 // === SPEECH ===
 let vr=false,ev=null;
@@ -509,19 +513,34 @@ function updateHome(){
 // === WY NEW STANDARD FLOW ===
 function wyKey(w){return 'wy:'+w.k;}
 function enterWY(){
-  bank='wy';selWYBooks=[];
+  bank='wy';selWYBooks=[];selWYUnits=[];
   document.getElementById('wy-grid').innerHTML=WY_BOOKS.map(book=>{
     const words=WY.filter(w=>w.book===book),m=words.filter(w=>S.mastered[wyKey(w)]).length;
     return '<div class="cb" data-book="'+book+'" onclick="wyToggle(this)">'+book+'<span class="cn">'+m+'/'+words.length+'</span></div>';
   }).join('');
+  renderWYUnits();
   document.getElementById('wy-go').disabled=true;showPg('wy-book');
 }
-function wyToggle(el){const b=el.dataset.book,i=selWYBooks.indexOf(b);if(i>=0){selWYBooks.splice(i,1);el.classList.remove('sel');}else{selWYBooks.push(b);el.classList.add('sel');}document.getElementById('wy-go').disabled=selWYBooks.length===0;}
-function wySelectAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.add('sel'));selWYBooks=WY_BOOKS.slice();document.getElementById('wy-go').disabled=false;}
-function wyClearAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.remove('sel'));selWYBooks=[];document.getElementById('wy-go').disabled=true;}
+function wyUnitKey(book,module){return book+'|'+module;}
+function wyUnitsForBooks(){const seen=new Set(),out=[];WY.forEach(w=>{if(selWYBooks.includes(w.book)){const key=wyUnitKey(w.book,w.module);if(!seen.has(key)){seen.add(key);out.push({book:w.book,module:w.module,key});}}});return out;}
+function renderWYUnits(){
+  const units=wyUnitsForBooks(),wrap=document.getElementById('wy-unit-wrap'),grid=document.getElementById('wy-unit-grid');
+  if(!wrap||!grid)return;
+  wrap.style.display=units.length?'block':'none';
+  grid.innerHTML=units.map(u=>'<div class="cb '+(selWYUnits.includes(u.key)?'sel':'')+'" data-key="'+html(u.key)+'" onclick="wyUnitToggle(this)">'+html(u.book)+' · '+html(u.module)+'<span class="cn">'+WY.filter(w=>w.book===u.book&&w.module===u.module).length+'词</span></div>').join('');
+}
+function wyToggle(el){
+  const b=el.dataset.book,i=selWYBooks.indexOf(b);
+  if(i>=0){selWYBooks.splice(i,1);el.classList.remove('sel');selWYUnits=selWYUnits.filter(k=>!k.startsWith(b+'|'));}
+  else{selWYBooks.push(b);el.classList.add('sel');WY.filter(w=>w.book===b).forEach(w=>{const k=wyUnitKey(w.book,w.module);if(!selWYUnits.includes(k))selWYUnits.push(k);});}
+  renderWYUnits();document.getElementById('wy-go').disabled=selWYBooks.length===0;
+}
+function wyUnitToggle(el){const k=el.dataset.key,i=selWYUnits.indexOf(k);if(i>=0){selWYUnits.splice(i,1);el.classList.remove('sel');}else{selWYUnits.push(k);el.classList.add('sel');}document.getElementById('wy-go').disabled=selWYUnits.length===0;}
+function wySelectAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.add('sel'));selWYBooks=WY_BOOKS.slice();selWYUnits=wyUnitsForBooks().map(u=>u.key);renderWYUnits();document.getElementById('wy-go').disabled=false;}
+function wyClearAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.remove('sel'));selWYBooks=[];selWYUnits=[];renderWYUnits();document.getElementById('wy-go').disabled=true;}
 function startWYSpell(){
   bank='wy';mode='wyspell';
-  const pool=WY.filter(w=>selWYBooks.includes(w.book));
+  const pool=WY.filter(w=>selWYBooks.includes(w.book)&&selWYUnits.includes(wyUnitKey(w.book,w.module)));
   let wp=pool.filter(w=>S.wrong[wyKey(w)]),np=pool.filter(w=>!S.wrong[wyKey(w)]);
   wp.sort(()=>Math.random()-0.5);np.sort(()=>Math.random()-0.5);
   const wc=Math.min(wp.length,Math.floor(pool.length*0.4));
