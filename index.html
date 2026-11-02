@@ -73,6 +73,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .wd .spk:active{transform:scale(1.3)}
 .wd .spk.playing{animation:pulse .6s ease-in-out infinite}
 .cnword{white-space:pre-line;line-height:1.6;margin:8px 0}
+.wy-preview-list{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.wy-preview-row{display:grid;grid-template-columns:34px minmax(105px, .75fr) minmax(0, 1.7fr);gap:10px;align-items:start;padding:10px 12px;border-bottom:1px solid #E2E8F0;font-size:14px}
+.wy-preview-row:last-child{border-bottom:0}.wy-preview-no{color:var(--txt2);text-align:right}.wy-preview-word{font-weight:700;overflow-wrap:anywhere}.wy-preview-meaning{white-space:pre-line;line-height:1.55;color:var(--txt2)}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ob{background:var(--card);border:2px solid #E2E8F0;border-radius:10px;padding:12px;font-size:15px;cursor:pointer;transition:.2s;text-align:center}
@@ -181,6 +184,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <h3>外研新起点</h3>
     <p>一年级上至三年级上 · 448个单词 · 纯拼写</p>
     <div class="pi" id="wy-prog">0/448 已掌握</div>
+    <button class="btn btn2 btn-sm" onclick="event.stopPropagation();enterWYPreview()">预览全部单词</button>
     <div class="badge">✍️</div>
   </div>
 
@@ -256,6 +260,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 
 <!-- CAM: Level Selection -->
 <!-- WY: Semester Selection -->
+<div class="pg" id="page-wy-preview">
+  <div class="ph"><button class="bb" onclick="goHome()" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2>外研新起点 · 单词预览</h2></div>
+  <div style="font-size:12px;color:var(--txt2);margin-bottom:10px">已按英文去重，共 <span id="wy-preview-count">0</span> 个词</div>
+  <div class="wy-preview-list" id="wy-preview-list"></div>
+</div>
+
 <div class="pg" id="page-wy-book">
   <div class="ph"><button class="bb" onclick="goHome()" style="position:absolute;left:4px;top:50%;transform:translateY(-50%)">←</button><h2>外研新起点 · 选学期</h2></div>
   <div style="display:flex;gap:6px;margin-bottom:6px">
@@ -512,6 +522,21 @@ function updateHome(){
 
 // === WY NEW STANDARD FLOW ===
 function wyKey(w){return 'wy:'+w.k;}
+function wyPreviewEntries(){
+  const map=new Map();
+  WY.forEach(w=>{
+    const key=normWordKey(w.w),meaning=formatWYMeaning(w.c||WY_MEANINGS[w.w]||'');
+    if(!map.has(key))map.set(key,{w:w.w,meanings:[]});
+    const item=map.get(key);if(meaning&&!item.meanings.includes(meaning))item.meanings.push(meaning);
+  });
+  return Array.from(map.values());
+}
+function enterWYPreview(){
+  const list=wyPreviewEntries();
+  document.getElementById('wy-preview-count').textContent=list.length;
+  document.getElementById('wy-preview-list').innerHTML=list.map((item,i)=>'<div class="wy-preview-row"><span class="wy-preview-no">'+(i+1)+'</span><span class="wy-preview-word">'+html(item.w)+'</span><span class="wy-preview-meaning">'+html(item.meanings.join('\n')||'本课词汇')+'</span></div>').join('');
+  showPg('wy-preview');
+}
 function enterWY(){
   bank='wy';selWYBooks=[];selWYUnits=[];
   document.getElementById('wy-grid').innerHTML=WY_BOOKS.map(book=>{
