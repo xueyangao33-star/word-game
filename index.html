@@ -76,6 +76,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .wy-preview-list{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .wy-preview-row{display:grid;grid-template-columns:34px minmax(105px, .75fr) minmax(0, 1.7fr);gap:10px;align-items:start;padding:10px 12px;border-bottom:1px solid #E2E8F0;font-size:14px}
 .wy-preview-row:last-child{border-bottom:0}.wy-preview-no{color:var(--txt2);text-align:right}.wy-preview-word{font-weight:700;overflow-wrap:anywhere}.wy-preview-meaning{white-space:pre-line;line-height:1.55;color:var(--txt2)}
+.mine-page{background:#241711;color:#F8E7C5;min-height:calc(100vh - 32px);margin:-16px;padding:16px;padding-bottom:28px}
+.mine-title{font-weight:800;font-size:19px;text-align:center;color:#FFD36A;text-shadow:2px 2px 0 #5A2C18;padding:10px 0 14px}
+.mine-sub{text-align:center;color:#D3B78A;font-size:12px;margin:-8px 0 14px}
+.mine-card{background:linear-gradient(145deg,#6F432A,#3E241A);border:2px solid #B67B3C;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:inset 0 0 0 2px rgba(255,220,141,.12),0 5px 0 #1A100C;cursor:pointer;color:#FFE8B4}
+.mine-card:active{transform:translateY(3px);box-shadow:inset 0 0 0 2px rgba(255,220,141,.12),0 2px 0 #1A100C}
+.mine-card .mine-icon{font-size:30px;float:right}.mine-card h3{font-size:16px;margin-bottom:4px}.mine-card p{font-size:12px;color:#E2C99B;line-height:1.5}
+.mine-board{background:linear-gradient(135deg,#3A241A,#1D1310);border:2px solid #9F6D39;border-radius:12px;padding:14px;box-shadow:inset 0 0 0 2px rgba(255,220,141,.08),0 5px 0 #130B08;margin-bottom:14px}
+.mine-status{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#E8C98E;margin-bottom:12px}.mine-status strong{color:#FFD36A}
+.mine-clue{text-align:center;font-size:13px;color:#DAB579;margin-bottom:8px}.mine-word{text-align:center;font-size:30px;font-weight:800;color:#FFF1CD;margin:8px 0 14px;overflow-wrap:anywhere}.mine-meaning{text-align:center;white-space:pre-line;line-height:1.6;font-size:20px;color:#FFF1CD;margin:12px 0 18px}
+.mine-options{display:grid;grid-template-columns:1fr 1fr;gap:9px}.mine-option{min-height:58px;padding:10px 8px;border:2px solid #9D6937;border-radius:9px;background:#70462D;color:#FFF0D0;font-size:14px;font-weight:700;cursor:pointer;white-space:pre-line}.mine-option:active{transform:scale(.97)}.mine-option.good{background:#416B42;border-color:#A9D46B}.mine-option.bad{background:#7A3330;border-color:#F08C6F}.mine-option:disabled{cursor:default;opacity:.8}
+.mine-letter-slots{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;min-height:42px;margin:10px 0 16px}.mine-letter-slots span{width:28px;height:34px;border-bottom:2px solid #E3B65E;text-align:center;font-size:23px;font-weight:800;color:#FFF1CD}.mine-letters{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}.mine-letter{min-width:36px;height:40px;border:2px solid #B67B3C;border-radius:7px;background:#D49A52;color:#2D1A10;font-weight:800;font-size:18px;cursor:pointer;box-shadow:0 3px 0 #6B3D21}.mine-letter.used{opacity:.3;pointer-events:none}.mine-letter:active{transform:translateY(2px);box-shadow:0 1px 0 #6B3D21}
+.mine-actions{display:flex;gap:8px;margin-top:14px}.mine-btn{flex:1;border:2px solid #B67B3C;border-radius:9px;background:#70462D;color:#FFE8B4;padding:10px;font-weight:700;cursor:pointer}.mine-btn.primary{background:#D48A26;color:#2B160C;border-color:#FFD36A}.mine-btn:disabled{opacity:.45}
+.mine-match{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.mine-tile{min-height:68px;border:2px solid #896039;border-radius:8px;background:#70462D;color:#FFE8B4;display:flex;align-items:center;justify-content:center;text-align:center;padding:5px;font-size:13px;font-weight:700;cursor:pointer;white-space:pre-line}.mine-tile.open{background:#B47A3E;color:#241711}.mine-tile.matched{background:#416B42;border-color:#A9D46B;color:#F3FFD9;cursor:default}.mine-result{text-align:center;padding:35px 12px}.mine-result .mine-score{font-size:48px;font-weight:900;color:#FFD36A;margin:12px 0}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ob{background:var(--card);border:2px solid #E2E8F0;border-radius:10px;padding:12px;font-size:15px;cursor:pointer;transition:.2s;text-align:center}
@@ -187,6 +200,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="badge">✍️</div>
   </div>
   <button class="btn btn2" style="margin:-4px 0 12px" onclick="enterWYPreview()">预览全部单词</button>
+  <button class="btn" style="margin:-4px 0 12px;background:#8A4B26" onclick="enterWYGames()">进入矿洞游戏</button>
 
 
   <div class="bk" style="border-left:4px solid #F59E0B" onclick="enterXESP()">
@@ -278,7 +292,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
     <div class="cg" id="wy-unit-grid"></div>
   </div>
   <button class="btn" id="wy-go" disabled onclick="startWYSpell()">开始纯拼写</button>
+  <button class="btn" id="wy-games-go" disabled onclick="enterWYGames()" style="background:#8A4B26">进入矿洞游戏</button>
 </div>
+
+<div class="pg" id="page-wy-games"><div class="mine-page">
+  <div class="ph"><button class="bb" onclick="showPg('wy-book')" style="position:absolute;left:0;top:50%;transform:translateY(-50%);color:#F8E7C5">←</button><h2 style="color:#FFD36A">外研新起点 · 矿洞大厅</h2></div>
+  <div class="mine-title">⛏️ 选择你的训练关卡</div><div class="mine-sub">当前选择的词册和 Unit 会用于所有游戏</div>
+  <div class="mine-card" onclick="startWYArcade('read')"><span class="mine-icon">📖</span><h3>认读矿洞</h3><p>看英文，挖出正确的中文意思</p></div>
+  <div class="mine-card" onclick="startWYArcade('reverse')"><span class="mine-icon">🗺️</span><h3>翻译矿车</h3><p>看中文，找到对应的英文单词</p></div>
+  <div class="mine-card" onclick="startWYArcade('spell')"><span class="mine-icon">✍️</span><h3>拼写矿井</h3><p>看意思，使用字母矿石拼出单词</p></div>
+  <div class="mine-card" onclick="startWYArcade('case')"><span class="mine-icon">🔤</span><h3>大小写机关</h3><p>辨认小写和大写字母形式</p></div>
+  <div class="mine-card" onclick="startWYArcade('match')"><span class="mine-icon">🧰</span><h3>配对宝箱</h3><p>快速找到英文和中文意思的配对牌</p></div>
+</div></div>
+
+<div class="pg" id="page-wy-arcade"><div class="mine-page">
+  <div class="ph"><button class="bb" onclick="showPg('wy-games')" style="position:absolute;left:0;top:50%;transform:translateY(-50%);color:#F8E7C5">←</button><h2 id="wy-arcade-title" style="color:#FFD36A">矿洞训练</h2></div>
+  <div id="wy-arcade-body"></div>
+</div></div>
 
 <!-- CAM: Level Selection -->
 <div class="pg" id="page-cam-lv">
@@ -522,6 +552,10 @@ function updateHome(){
 
 // === WY NEW STANDARD FLOW ===
 function wyKey(w){return 'wy:'+w.k;}
+function wySyncActions(){const disabled=!selWYBooks.length||!selWYUnits.length;document.getElementById('wy-go').disabled=disabled;document.getElementById('wy-games-go').disabled=disabled;}
+function wySelectedPool(){return WY.filter(w=>selWYBooks.includes(w.book)&&selWYUnits.includes(wyUnitKey(w.book,w.module)));}
+function wyShuffle(a){return a.slice().sort(()=>Math.random()-.5);}
+function enterWYGames(){if(!selWYBooks.length){enterWY();return;}if(!selWYUnits.length){toast('请先选择 Unit');return;}showPg('wy-games');}
 function wyPreviewEntries(){
   const map=new Map();
   WY.forEach(w=>{
@@ -544,7 +578,7 @@ function enterWY(){
     return '<div class="cb" data-book="'+book+'" onclick="wyToggle(this)">'+book+'<span class="cn">'+m+'/'+words.length+'</span></div>';
   }).join('');
   renderWYUnits();
-  document.getElementById('wy-go').disabled=true;showPg('wy-book');
+  document.getElementById('wy-go').disabled=true;document.getElementById('wy-games-go').disabled=true;showPg('wy-book');
 }
 function wyUnitKey(book,module){return book+'|'+module;}
 function wyUnitsForBooks(){const seen=new Set(),out=[];WY.forEach(w=>{if(selWYBooks.includes(w.book)){const key=wyUnitKey(w.book,w.module);if(!seen.has(key)){seen.add(key);out.push({book:w.book,module:w.module,key});}}});return out;}
@@ -558,14 +592,14 @@ function wyToggle(el){
   const b=el.dataset.book,i=selWYBooks.indexOf(b);
   if(i>=0){selWYBooks.splice(i,1);el.classList.remove('sel');selWYUnits=selWYUnits.filter(k=>!k.startsWith(b+'|'));}
   else{selWYBooks.push(b);el.classList.add('sel');WY.filter(w=>w.book===b).forEach(w=>{const k=wyUnitKey(w.book,w.module);if(!selWYUnits.includes(k))selWYUnits.push(k);});}
-  renderWYUnits();document.getElementById('wy-go').disabled=selWYBooks.length===0;
+  renderWYUnits();wySyncActions();
 }
-function wyUnitToggle(el){const k=el.dataset.key,i=selWYUnits.indexOf(k);if(i>=0){selWYUnits.splice(i,1);el.classList.remove('sel');}else{selWYUnits.push(k);el.classList.add('sel');}document.getElementById('wy-go').disabled=selWYUnits.length===0;}
-function wySelectAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.add('sel'));selWYBooks=WY_BOOKS.slice();selWYUnits=wyUnitsForBooks().map(u=>u.key);renderWYUnits();document.getElementById('wy-go').disabled=false;}
-function wyClearAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.remove('sel'));selWYBooks=[];selWYUnits=[];renderWYUnits();document.getElementById('wy-go').disabled=true;}
+function wyUnitToggle(el){const k=el.dataset.key,i=selWYUnits.indexOf(k);if(i>=0){selWYUnits.splice(i,1);el.classList.remove('sel');}else{selWYUnits.push(k);el.classList.add('sel');}wySyncActions();}
+function wySelectAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.add('sel'));selWYBooks=WY_BOOKS.slice();selWYUnits=wyUnitsForBooks().map(u=>u.key);renderWYUnits();wySyncActions();}
+function wyClearAll(){document.querySelectorAll('#wy-grid .cb').forEach(b=>b.classList.remove('sel'));selWYBooks=[];selWYUnits=[];renderWYUnits();wySyncActions();}
 function startWYSpell(){
   bank='wy';mode='wyspell';
-  const pool=WY.filter(w=>selWYBooks.includes(w.book)&&selWYUnits.includes(wyUnitKey(w.book,w.module)));
+  const pool=wySelectedPool();
   let wp=pool.filter(w=>S.wrong[wyKey(w)]),np=pool.filter(w=>!S.wrong[wyKey(w)]);
   wp.sort(()=>Math.random()-0.5);np.sort(()=>Math.random()-0.5);
   const wc=Math.min(wp.length,Math.floor(pool.length*0.4));
@@ -574,6 +608,68 @@ function startWYSpell(){
   qi=0;qOk=0;qNo=0;quizBackPage='wy-book';
   document.getElementById('quiz-title').textContent='外研新起点 · 纯拼写';showPg('quiz');renderQ();
 }
+
+// === WY ARCADE GAMES ===
+function wyMeaning(w){return formatWYMeaning(w.c||WY_MEANINGS[w.w]||'本课词汇');}
+function startWYArcade(kind){
+  const pool=wySelectedPool();if(!pool.length){toast('请先选择单词');showPg('wy-book');return;}
+  bank='wy';mode='wyarcade';wyArcadeMode=kind;wyArcadePool=wyShuffle(pool).slice(0,kind==='match'?8:10);wyArcadeIndex=0;wyArcadeScore=0;wyArcadeLives=3;wyArcadeStreak=0;wyArcadeAnswered=false;wyArcadeChoice='';qOk=0;qNo=0;
+  if(kind==='spell')wyPrepareArcadeLetters();
+  if(kind==='match')wySetupMatch();
+  showPg('wy-arcade');wyRenderArcade();
+}
+function wyPrepareArcadeLetters(){
+  const target=wyTarget(wyArcadePool[wyArcadeIndex]),extras=[];for(const ch of 'abcdefghijklmnopqrstuvwxyz'){if(!target.includes(ch)&&extras.length<3)extras.push(ch);}
+  wyArcadeLetters=wyShuffle(Array.from(target).concat(extras));wyArcadeTyped='';
+}
+function wyArcadeStatus(){return '<div class="mine-status"><span>⛏️ 得分 <strong>'+wyArcadeScore+'</strong></span><span>❤️ '+wyArcadeLives+'</span><span>连击 <strong>'+wyArcadeStreak+'</strong></span></div>';}
+function wyArcadeOptions(w,kind){
+  const key=kind==='read'?'meaning':kind==='case'?'upper':'word';
+  const correct=key==='meaning'?wyMeaning(w):key==='upper'?w.w.toUpperCase():w.w;
+  const vals=[correct],seen=new Set([correct]);
+  for(const x of wyShuffle(wyArcadePool)){const v=key==='meaning'?wyMeaning(x):key==='upper'?x.w.toUpperCase():x.w;if(!seen.has(v)){seen.add(v);vals.push(v);}if(vals.length>=4)break;}
+  return wyShuffle(vals);
+}
+function wyRenderArcade(){
+  const body=document.getElementById('wy-arcade-body');if(!body)return;
+  if(wyArcadeMode==='match'){wyRenderMatch();return;}
+  if(wyArcadeIndex>=wyArcadePool.length){wyArcadeFinish();return;}
+  const w=wyArcadePool[wyArcadeIndex],title={read:'认读矿洞',reverse:'翻译矿车',spell:'拼写矿井',case:'大小写机关'}[wyArcadeMode];
+  document.getElementById('wy-arcade-title').textContent=title;
+  let content=wyArcadeStatus()+'<div class="mine-board"><div class="mine-clue">第 '+(wyArcadeIndex+1)+' / '+wyArcadePool.length+' 关</div>';
+  if(wyArcadeMode==='read')content+='<div class="mine-word">'+html(w.w)+'</div><div class="mine-clue">挖出它的中文意思</div>'+wyArcadeChoiceButtons(w,'read');
+  if(wyArcadeMode==='reverse')content+='<div class="mine-meaning">'+html(wyMeaning(w))+'</div><div class="mine-clue">找到对应的英文单词</div>'+wyArcadeChoiceButtons(w,'reverse');
+  if(wyArcadeMode==='case')content+='<div class="mine-clue">请找出它的大写形式</div><div class="mine-word">'+html(w.w.toLowerCase())+'</div>'+wyArcadeChoiceButtons(w,'case');
+  if(wyArcadeMode==='spell')content+='<div class="mine-meaning">'+html(wyMeaning(w))+'</div>'+wyArcadeSpellMarkup(w);
+  content+='</div>';body.innerHTML=content;
+}
+function wyArcadeChoiceButtons(w,kind){
+  const opts=wyArcadeOptions(w,kind),correct=kind==='read'?wyMeaning(w):kind==='case'?w.w.toUpperCase():w.w;
+  return '<div class="mine-options">'+opts.map(v=>{const selected=wyArcadeAnswered&&v===wyArcadeChoice;const good=wyArcadeAnswered&&v===correct;return '<button class="mine-option '+(good?'good':selected?'bad':'')+'" '+(wyArcadeAnswered?'disabled':'')+' onclick="wyArcadePick('+html(JSON.stringify(v))+')">'+html(v)+'</button>';}).join('')+'</div>'+(wyArcadeAnswered?'<div class="mine-actions"><button class="mine-btn primary" onclick="wyArcadeNext()">'+(wyArcadeIndex+1<wyArcadePool.length?'下一关':'看结果')+' →</button></div>':'');
+}
+function wyArcadePick(value){if(wyArcadeAnswered)return;const w=wyArcadePool[wyArcadeIndex];wyArcadeChoice=value;wyArcadeAnswered=true;const correct=wyArcadeMode==='read'?wyMeaning(w):wyArcadeMode==='case'?w.w.toUpperCase():w.w;wyArcadeJudge(w,wyNorm(value)===wyNorm(correct));wyRenderArcade();}
+function wyArcadeJudge(w,ok){qWords=wyArcadePool;qi=wyArcadeIndex;if(ok){wyArcadeScore+=10+wyArcadeStreak*2;wyArcadeStreak++;doOk();}else{wyArcadeLives--;wyArcadeStreak=0;doNo();}}
+function wyArcadeNext(){if(wyArcadeLives<=0){wyArcadeFinish();return;}wyArcadeIndex++;wyArcadeAnswered=false;wyArcadeChoice='';wyArcadeTyped='';if(wyArcadeMode==='spell')wyPrepareArcadeLetters();wyRenderArcade();}
+function wyArcadeSpellMarkup(w){
+  const target=wyTarget(w),used={};for(const ch of wyArcadeTyped)used[ch]=(used[ch]||0)+1;const seen={};
+  const slots=Array.from(target).map((ch,i)=>ch===' '?'<span style="width:12px;border:0"></span>':'<span>'+html(wyArcadeTyped[i]||'_')+'</span>').join('');
+  const letters=wyArcadeLetters.map(ch=>{const n=seen[ch]||0;seen[ch]=n+1;const off=n<(used[ch]||0);return '<button class="mine-letter '+(off?'used':'')+'" '+(off?'disabled':'')+' onclick="wyArcadeType('+html(JSON.stringify(ch))+')">'+(ch===' '?'空格':html(ch))+'</button>';}).join('');
+  return '<div class="mine-letter-slots">'+slots+'</div><div class="mine-letters">'+letters+'</div><div class="mine-actions"><button class="mine-btn" onclick="wyArcadeTyped=\'\';wyRenderArcade()">清空</button><button class="mine-btn primary" '+(wyArcadeTyped.length<target.length||wyArcadeAnswered?'disabled':'')+' onclick="wyArcadeCheck()">检查</button></div>'+(wyArcadeAnswered?'<div class="mine-actions"><button class="mine-btn primary" onclick="wyArcadeNext()">'+(wyArcadeIndex+1<wyArcadePool.length?'下一关':'看结果')+' →</button></div>':'');
+}
+function wyArcadeType(ch){if(wyArcadeAnswered)return;const target=wyTarget(wyArcadePool[wyArcadeIndex]);if(wyArcadeTyped.length<target.length){wyArcadeTyped+=ch;wyRenderArcade();}}
+function wyArcadeCheck(){if(wyArcadeAnswered)return;const w=wyArcadePool[wyArcadeIndex];wyArcadeAnswered=true;wyArcadeChoice=wyArcadeTyped;wyArcadeJudge(w,wyNorm(wyArcadeTyped)===wyNorm(w.w));wyRenderArcade();}
+function wySetupMatch(){
+  const cards=[];wyArcadePool.forEach((w,i)=>{const pair='p'+i;cards.push({pair,type:'en',text:w.w});cards.push({pair,type:'cn',text:wyMeaning(w)});});
+  wyArcadeMatchCards=wyShuffle(cards);wyArcadeMatchOpen=[];wyArcadeMatchDone=[];
+}
+function wyRenderMatch(){
+  document.getElementById('wy-arcade-title').textContent='配对宝箱';
+  const body=document.getElementById('wy-arcade-body');
+  if(wyArcadeMatchDone.length===wyArcadeMatchCards.length){wyArcadeFinish();return;}
+  body.innerHTML=wyArcadeStatus()+'<div class="mine-board"><div class="mine-clue">找到英文和中文意思的配对牌 · 已完成 '+(wyArcadeMatchDone.length/2)+' / '+(wyArcadeMatchCards.length/2)+'</div><div class="mine-match">'+wyArcadeMatchCards.map((c,i)=>{const open=wyArcadeMatchOpen.includes(i)||wyArcadeMatchDone.includes(i);return '<button class="mine-tile '+(wyArcadeMatchDone.includes(i)?'matched':open?'open':'')+'" '+(wyArcadeMatchDone.includes(i)?'disabled':'')+' onclick="wyMatchTap('+i+')">'+(open?html(c.text):'？')+'</button>';}).join('')+'</div></div>';
+}
+function wyMatchTap(i){if(wyArcadeMatchDone.includes(i)||wyArcadeMatchOpen.includes(i)||wyArcadeMatchOpen.length>=2)return;wyArcadeMatchOpen.push(i);wyRenderMatch();if(wyArcadeMatchOpen.length<2)return;const [a,b]=wyArcadeMatchOpen;setTimeout(()=>{const pairIndex=wyArcadeMatchCards[a].pair.slice(1)*1;if(wyArcadeMatchCards[a].pair===wyArcadeMatchCards[b].pair){wyArcadeMatchDone.push(a,b);wyArcadeScore+=10+wyArcadeStreak*2;wyArcadeStreak++;qWords=wyArcadePool;qi=pairIndex;doOk();}else{wyArcadeLives--;wyArcadeStreak=0;qWords=[wyArcadePool[pairIndex]];qi=0;doNo();}wyArcadeMatchOpen=[];wyRenderMatch();},550);}
+function wyArcadeFinish(){const body=document.getElementById('wy-arcade-body');document.getElementById('wy-arcade-title').textContent='本轮完成';body.innerHTML='<div class="mine-board mine-result"><div style="font-size:52px">🏆</div><h2>矿洞清理完成</h2><div class="mine-score">'+wyArcadeScore+' 分</div><div>生命剩余：'+wyArcadeLives+'　连击：'+wyArcadeStreak+'</div><button class="mine-btn primary" style="width:100%;margin-top:20px" onclick="startWYArcade(wyArcadeMode)">再玩一轮</button><button class="mine-btn" style="width:100%;margin-top:8px" onclick="showPg(\'wy-games\')">返回游戏大厅</button></div>'}
 
 // === XES FLOW ===
 function enterXES(){
