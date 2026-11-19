@@ -529,7 +529,7 @@ function speak(text){
 }
 
 // === NAV ===
-function showPg(p){document.querySelectorAll('.pg').forEach(e=>e.classList.remove('act'));document.getElementById('page-'+p).classList.add('act');
+function showPg(p){document.querySelectorAll('.pg').forEach(e=>e.classList.remove('act'));document.getElementById('page-'+p).classList.add('act');const hd=document.querySelector('.hd');if(hd)hd.style.display=(p==='wy-games'||p==='wy-arcade')?'none':'';
   document.querySelectorAll('.ti').forEach((t,i)=>{t.classList.toggle('act',(p==='home'&&i===0)||(p==='stats'&&i===1));});}
 function goHome(){showPg('home');updateHome();}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500);}
