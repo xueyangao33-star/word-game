@@ -409,6 +409,9 @@ const WY_WORDS=[["hello","n. 表示问候， 惊奇或唤起注意时的用语 i
 const WY_MEANINGS={
   welcome:'欢迎',to:'到；向',hi:'嗨；你好',are:'是',goodbye:'再见',a:'一个；一件',an:'一个；一件',day:'一天',morning:'早晨；上午',Ms:'女士',stand:'站立', 'stand up':'站起来', 'sit down':'坐下',close:'关上；关闭',point:'指出',listen:'听',write:'写',meet:'遇见；认识',everyone:'每个人；大家',everybody:'每个人；大家',thing:'东西；事情',pack:'收拾；打包',ruler:'尺子',eraser:'橡皮',in:'在……里面',kid:'小孩',find:'找到', 'lost and found':'失物招领处', 'take care of sb/sth':'照顾某人或某物', 'look at sb/sth':'看某人或某物',back:'回去；回来', 'come back':'回来',colourful:'色彩丰富的',world:'世界',hooray:'好哇；万岁',pink:'粉色的',orange:'橙色的',purple:'紫色的',rainbow:'彩虹',right:'正确的；右边的',first:'第一的；首先',magical:'神奇的',fun:'有趣的；乐趣',today:'今天',number:'数字；号码',count:'数数；计数', 'dad (father)':'爸爸', 'mum (mother)':'妈妈', 'grandpa (grandfather)':'爷爷；外公', 'grandma (grandmother)':'奶奶；外婆',story:'故事',cap:'帽子',on:'在……上面',daddy:'爸爸',mummy:'妈妈',where:'在哪里',sweet:'甜的',game:'游戏', 'living room':'客厅',bedroom:'卧室',bathroom:'浴室；卫生间',kitchen:'厨房',think:'想；认为',under:'在……下面',miaow:'喵喵声',ball:'球',their:'他们的；她们的；它们的',share:'分享；共用',put:'放；放置',cooking:'做饭',sun:'太阳',lucky:'幸运的'
 };
+const WY_TEXTBOOK_MEANINGS={hello:'你好；喂',nice:'令人愉快的',meet:'认识；结识',you:'你；你们',"let's":'让我们',play:'玩；玩耍',I:'我',am:'是（我是）',too:'也；还',photo:'照片；相片',how:'怎样；如何',say:'说',one:'一',two:'二',three:'三',four:'四',five:'五',six:'六',seven:'七',eight:'八',nine:'九',ten:'十',eleven:'十一',twelve:'十二',thank:'感谢；谢谢',please:'请；劳驾',number:'数；数字',my:'我的',family:'家庭；家人',mum:'妈妈',dad:'爸爸',grandpa:'祖父；外祖父',grandma:'祖母；外祖母',sister:'姐姐；妹妹',and:'和；与',brother:'哥哥；弟弟',this:'这；这个',is:'是',love:'爱；关爱',me:'我',what:'什么',open:'打开',door:'门',classroom:'教室',blackboard:'黑板',window:'窗户',desk:'书桌',chair:'椅子',it:'它；这；那',big:'大的',that:'那；那个',teacher:'教师；老师',very:'非常',old:'年代久远的',school:'学校',look:'看；望；瞧',schoolbag:'书包','pencil case':'笔袋；铅笔盒',pencil:'铅笔',book:'书；书籍','bye(=goodbye)':'再见；拜拜','here you are':'给你',read:'阅读',together:'一起；共同',red:'红色',green:'绿色',blue:'蓝色',black:'黑色',white:'白色',yellow:'黄色',colour:'颜色',many:'许多；大量',happy:'快乐的','Chinese New Year':'春节',stop:'停止；终止',go:'走',slow:'慢下来；减速',pet:'宠物',bird:'鸟',dog:'狗',cat:'猫',fish:'鱼',rabbit:'兔',friend:'朋友',animal:'动物',they:'它们',welcome:'欢迎',zoo:'动物园',tiger:'老虎',lion:'狮子',bear:'熊',monkey:'猴子',panda:'大熊猫',cute:'漂亮的；逗人喜爱的',picture:'画；图画',which:'哪些',from:'自；从；由',face:'脸',eye:'眼睛',ear:'耳朵',nose:'鼻子',mouth:'嘴；口',we:'我们',twin:'双胞胎中的一个',have:'有；拥有',small:'小的',same:'同样',know:'明白；懂得',now:'现在',long:'长的',hair:'头发',short:'短的',different:'不同的',touch:'触摸；碰',your:'你的；你们的',body:'身体','come on':'来吧',boy:'男孩',girl:'女孩',rock:'摆动；摇摆',move:'移动',head:'头；头部',hand:'手',arm:'手臂；上肢',leg:'腿',foot:'脚',robot:'机器人',cool:'酷的；棒的',monster:'怪兽',aunt:'姑母；姨母',her:'她的',part:'部位',toy:'玩具',his:'他的',name:'名字',he:'他',swim:'游泳',fast:'快地',she:'她',run:'跑；奔跑',strong:'健壮的',basketball:'篮球',well:'很好',home:'家；住所',bed:'床',table:'桌子',sofa:'长沙发',room:'房间','sit down':'坐下',next:'（时间）紧接着的',clean:'干净的',tidy:'整洁的',amazing:'令人惊叹的',snow:'雪',house:'房屋；房子',tall:'高的',live:'住'};
+function wyCompactMeaning(s){const raw=String(s||'').replace(/\s+(?=(?:n|v|adj|adv|prep|pron|conj|int|art|aux|vt|vi|abbr|na)\.)/gi,'\n');const first=raw.split('\n')[0].replace(/^(?:n|v|adj|adv|prep|pron|conj|int|art|aux|vt|vi|abbr|na)\.\s*/i,'').trim();return first.split(/[；;]/).slice(0,2).join('；')||'本课词汇';}
+function wyBookMeaning(w){return WY_TEXTBOOK_MEANINGS[w.w]||WY_MEANINGS[w.w]||wyCompactMeaning(w.c);}
 const WY_BOOKS=['一年级上','一年级下','二年级上','二年级下','三年级上'];
 const WY=WY_WORDS.map((r,i)=>({w:r[0],c:r[1],book:r[2],module:r[3],k:r[2]+'|'+r[3]+'|'+r[0]+'|'+i}));
 const CAM={L1:[],L2:[],L3:[]};
@@ -564,7 +567,7 @@ function enterWYGames(){if(!selWYBooks.length){enterWY();return;}if(!selWYUnits.
 function wyPreviewEntries(){
   const map=new Map();
   WY.forEach(w=>{
-    const key=normWordKey(w.w),meaning=formatWYMeaning(w.c||WY_MEANINGS[w.w]||'');
+    const key=normWordKey(w.w),meaning=wyBookMeaning(w);
     if(!map.has(key))map.set(key,{w:w.w,meanings:[]});
     const item=map.get(key);if(meaning&&!item.meanings.includes(meaning))item.meanings.push(meaning);
   });
@@ -615,7 +618,7 @@ function startWYSpell(){
 }
 
 // === WY ARCADE GAMES ===
-function wyMeaning(w){return formatWYMeaning(w.c||WY_MEANINGS[w.w]||'本课词汇');}
+function wyMeaning(w){return wyBookMeaning(w);}
 function startWYArcade(kind){
   const pool=wySelectedPool();if(!pool.length){toast('请先选择单词');showPg('wy-book');return;}
   bank='wy';mode='wyarcade';wyArcadeMode=kind;wyArcadePool=wyShuffle(pool).slice(0,kind==='match'?8:10);wyArcadeIndex=0;wyArcadeScore=0;wyArcadeLives=3;wyArcadeStreak=0;wyArcadeAnswered=false;wyArcadeChoice='';qOk=0;qNo=0;
@@ -1041,7 +1044,7 @@ function chunkWord(word){
 function renderWYSpell(w,body){
   wyTyped='';wyAnswered=false;wyChoices=Array.from(wyTarget(w));
   for(let i=wyChoices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[wyChoices[i],wyChoices[j]]=[wyChoices[j],wyChoices[i]];}
-  body.innerHTML='<div class="wd"><div style="font-size:11px;color:var(--txt2)">外研新起点 · '+html(w.book)+' · '+html(w.module)+'</div><div class="cnword">'+html(formatWYMeaning(w.c||WY_MEANINGS[w.w]||'本课词汇'))+'</div><div class="spk" onclick="speak('+esc(w.w)+')">🔊</div><div id="wy-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:14px 0"></div></div><div id="wy-keyboard" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:430px;margin:0 auto"></div><div id="wy-result" style="min-height:28px;text-align:center;margin:10px 0;font-size:13px"></div><div style="display:flex;gap:6px"><button class="btn btn2" style="flex:1" onclick="wyBackspace()">⌫</button><button class="btn btn2" style="flex:1" onclick="wyClear()">清空</button><button class="btn" style="flex:2" onclick="wyCheck()">检查</button></div><div id="wy-next" style="display:none;margin-top:8px"><button class="btn" onclick="wyNext()">下一题 →</button></div>';
+  body.innerHTML='<div class="wd"><div style="font-size:11px;color:var(--txt2)">外研新起点 · '+html(w.book)+' · '+html(w.module)+'</div><div class="cnword">'+html(wyBookMeaning(w))+'</div><div class="spk" onclick="speak('+esc(w.w)+')">🔊</div><div id="wy-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:14px 0"></div></div><div id="wy-keyboard" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:430px;margin:0 auto"></div><div id="wy-result" style="min-height:28px;text-align:center;margin:10px 0;font-size:13px"></div><div style="display:flex;gap:6px"><button class="btn btn2" style="flex:1" onclick="wyBackspace()">⌫</button><button class="btn btn2" style="flex:1" onclick="wyClear()">清空</button><button class="btn" style="flex:2" onclick="wyCheck()">检查</button></div><div id="wy-next" style="display:none;margin-top:8px"><button class="btn" onclick="wyNext()">下一题 →</button></div>';
   wyDrawSpell(wyTarget(w));
 }
 function wyTarget(w){return String(w.w||'').toLowerCase();}
